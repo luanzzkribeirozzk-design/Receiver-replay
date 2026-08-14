@@ -1,5 +1,6 @@
 package com.replayx.receiver.security;
 
+import com.replayx.receiver.BuildConfig;
 import android.content.Context;
 import android.content.pm.PackageInfo;
 import android.content.pm.PackageManager;
