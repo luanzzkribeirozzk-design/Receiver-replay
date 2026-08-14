@@ -118,7 +118,8 @@ class MainActivity : AppCompatActivity() {
     private fun startPolling() {
         pollHandler?.removeCallbacksAndMessages(null)
         pollHandler = android.os.Handler(mainLooper)
-        val pollRunnable = object : Runnable {
+        lateinit var pollRunnable: Runnable
+        pollRunnable = object : Runnable {
             override fun run() {
                 lifecycleScope.launch {
                     val fields = withContext(Dispatchers.IO) { PairingManager.getStatus(this@MainActivity) }
