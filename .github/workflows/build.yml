@@ -1,0 +1,72 @@
+name: Build APK - Receiver
+
+on:
+  push:
+    branches: [main, master]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Configurar JDK 17
+        uses: actions/setup-java@v4
+        with:
+          java-version: '17'
+          distribution: temurin
+
+      - name: Instalar Gradle 8.4
+        uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '8.4'
+
+      - name: Gerar Gradle Wrapper
+        run: gradle wrapper --gradle-version=8.4
+
+      - name: Validar secrets de assinatura
+        env:
+          RXR_KEYSTORE_B64: ${{ secrets.RXR_KEYSTORE_B64 }}
+          RXR_KEYSTORE_PASSWORD: ${{ secrets.RXR_KEYSTORE_PASSWORD }}
+          RXR_KEY_ALIAS: ${{ secrets.RXR_KEY_ALIAS }}
+          RXR_KEY_PASSWORD: ${{ secrets.RXR_KEY_PASSWORD }}
+        run: |
+          set -euo pipefail
+          test -n "$RXR_KEYSTORE_B64" || { echo "Secret RXR_KEYSTORE_B64 não configurado." >&2; exit 1; }
+          test -n "$RXR_KEYSTORE_PASSWORD" || { echo "Secret RXR_KEYSTORE_PASSWORD não configurado." >&2; exit 1; }
+          test -n "$RXR_KEY_ALIAS" || { echo "Secret RXR_KEY_ALIAS não configurado." >&2; exit 1; }
+          test -n "$RXR_KEY_PASSWORD" || { echo "Secret RXR_KEY_PASSWORD não configurado." >&2; exit 1; }
+
+      - name: Restaurar keystore de release
+        env:
+          RXR_KEYSTORE_B64: ${{ secrets.RXR_KEYSTORE_B64 }}
+        run: |
+          set -euo pipefail
+          printf '%s' "$RXR_KEYSTORE_B64" | base64 --decode > app/replayx-receiver-release.jks
+          chmod 600 app/replayx-receiver-release.jks
+          test -s app/replayx-receiver-release.jks
+          echo "Keystore restaurada em app/replayx-receiver-release.jks."
+
+      - name: Build APK (release assinado)
+        env:
+          RXR_KEYSTORE_PATH: app/replayx-receiver-release.jks
+          RXR_KEYSTORE_PASSWORD: ${{ secrets.RXR_KEYSTORE_PASSWORD }}
+          RXR_KEY_ALIAS: ${{ secrets.RXR_KEY_ALIAS }}
+          RXR_KEY_PASSWORD: ${{ secrets.RXR_KEY_PASSWORD }}
+        run: ./gradlew assembleRelease --no-daemon --stacktrace
+
+      - name: Verificar APK de release
+        run: test -s app/build/outputs/apk/release/app-release.apk
+
+      - name: Upload APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: ReplayX-Receiver-APK
+          path: app/build/outputs/apk/release/app-release.apk
+          retention-days: 30
