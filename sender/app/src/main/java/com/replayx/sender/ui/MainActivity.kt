@@ -131,7 +131,7 @@ class MainActivity : AppCompatActivity() {
                         boxCodigo.visibility = View.GONE
                         log("[OK] dispositivo conectado: $modelo")
                     } else {
-                        pollHandler?.postDelayed(this, 3000)
+                        pollHandler?.postDelayed(check, 3000)
                     }
                 }
             }
