@@ -1,30 +1,17 @@
-# Configuração da assinatura de release
+# Build release sem assinatura
 
-O projeto gera um APK `release` assinado pelo GitHub Actions. O arquivo `.jks` não deve ser commitado, publicado nem incluído no ZIP do projeto. O workflow restaura o keystore temporariamente no runner a partir de um secret protegido e o utiliza somente durante o build.
-
-## Secrets obrigatórios
-
-Cadastre os quatro valores em **Settings → Secrets and variables → Actions → New repository secret**:
-
-| Nome | Valor |
-|---|---|
-| `RXR_KEYSTORE_B64` | Conteúdo integral de `replayx-receiver-release.jks.b64`, sem alterar o texto. |
-| `RXR_KEYSTORE_PASSWORD` | Senha do keystore. |
-| `RXR_KEY_ALIAS` | Alias real da chave dentro do keystore; confirme antes do primeiro build. |
-| `RXR_KEY_PASSWORD` | Senha da chave associada ao alias. Pode ser igual à senha do keystore, mas não deve ser presumido sem confirmação. |
-
-> Nunca coloque senhas, tokens, o arquivo `.jks` ou o arquivo `.jks.b64` em arquivos versionados, issues, logs ou mensagens públicas.
-
-## Como validar o alias localmente
-
-Com o arquivo `.jks` em uma máquina segura, execute `keytool -list -v -keystore replayx-receiver-release.jks` e informe a senha quando solicitado. Use o valor exibido em `Alias name` no secret `RXR_KEY_ALIAS`.
+O GitHub Actions deste projeto gera um APK `release` **sem assinatura**. O workflow não exige, lê ou restaura nenhum secret de keystore e publica o arquivo `app-release-unsigned.apk` como artefato.
 
 ## Fluxo do GitHub Actions
 
-O workflow verifica se os quatro secrets estão presentes, restaura o keystore em `app/replayx-receiver-release.jks`, executa `assembleRelease` com a configuração de assinatura e publica o APK como artefato por 30 dias. Se qualquer secret estiver ausente, o job falha imediatamente em vez de produzir um APK não assinado.
+A cada push em `main` ou `master`, ou por execução manual, o workflow configura o JDK 17, instala o Gradle 8.4, executa `assembleRelease`, verifica a existência do arquivo sem assinatura e publica o APK por 30 dias.
 
-A cópia temporária é ignorada pelo `.gitignore`, que também bloqueia arquivos `*.jks.b64`. Ainda assim, a proteção principal é não fazer upload desses arquivos para o repositório.
+O artefato pode ser baixado em **Actions → Build APK - Receiver → execução concluída → Artifacts → ReplayX-Receiver-APK-unsigned**.
 
-## Segurança do aplicativo
+## Observações importantes
 
-O projeto já configura `debuggable=false` no build de release, aplica `FLAG_SECURE` e executa uma verificação de assinatura em runtime. A verificação só funcionará se o APK for assinado pelo certificado esperado pelo código do aplicativo.
+Um APK sem assinatura não é adequado para distribuição final e pode não ser instalável em todos os dispositivos. Para distribuição, atualização ou publicação, o Android exige uma assinatura válida; nesse caso, será necessário restaurar uma configuração de assinatura protegida por secrets.
+
+O projeto também contém uma verificação de assinatura em runtime. Como o APK sem assinatura não possui o certificado de release esperado, o aplicativo pode fechar ao iniciar ou bloquear essa verificação. Isso é esperado para este modo de build e não indica falha do workflow.
+
+O arquivo `.jks` e sua versão `.b64` continuam bloqueados pelo `.gitignore` e não devem ser enviados ao repositório. Os secrets antigos de assinatura não são mais usados pelo workflow; eles podem ser removidos manualmente em **Settings → Secrets and variables → Actions** se não forem necessários para outro fluxo.

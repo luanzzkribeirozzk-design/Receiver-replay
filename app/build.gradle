@@ -15,28 +15,13 @@ android {
         versionName "1.0"
     }
 
-    signingConfigs {
-        release {
-            def ksPath = System.getenv("RXR_KEYSTORE_PATH")
-            if (ksPath != null && ksPath.trim().length() > 0) {
-                storeFile file(ksPath)
-                storePassword System.getenv("RXR_KEYSTORE_PASSWORD")
-                keyAlias System.getenv("RXR_KEY_ALIAS")
-                keyPassword System.getenv("RXR_KEY_PASSWORD")
-            }
-        }
-    }
-
     buildTypes {
         release {
             minifyEnabled true
             shrinkResources true
             debuggable false
             proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
-            def ksp = System.getenv("RXR_KEYSTORE_PATH")
-            if (ksp != null && ksp.trim().length() > 0) {
-                signingConfig signingConfigs.release
-            }
+            // Sem signingConfig: o artefato release é gerado sem assinatura.
         }
         debug {
             minifyEnabled true
