@@ -24,10 +24,10 @@ android {
             // Sem signingConfig: o artefato release é gerado sem assinatura.
         }
         debug {
-            minifyEnabled true
+            minifyEnabled false
             shrinkResources false
-            debuggable false
-            proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
+            debuggable true
+            // O Gradle assina automaticamente o APK debug com a chave de desenvolvimento.
         }
     }
 

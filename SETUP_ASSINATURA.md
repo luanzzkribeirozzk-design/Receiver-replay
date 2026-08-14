@@ -1,17 +1,17 @@
-# Build release sem assinatura
+# APK debug para instalação e testes
 
-O GitHub Actions deste projeto gera um APK `release` **sem assinatura**. O workflow não exige, lê ou restaura nenhum secret de keystore e publica o arquivo `app-release-unsigned.apk` como artefato.
+O GitHub Actions deste projeto gera um APK **debug assinado automaticamente pelo Gradle**. Esse fluxo não exige senha de keystore, alias ou secret privado. O arquivo produzido é `app-debug.apk` e é publicado como o artefato `ReplayX-Receiver-APK-debug`.
 
-## Fluxo do GitHub Actions
+## Como baixar
 
-A cada push em `main` ou `master`, ou por execução manual, o workflow configura o JDK 17, instala o Gradle 8.4, executa `assembleRelease`, verifica a existência do arquivo sem assinatura e publica o APK por 30 dias.
+Abra **Actions → Build APK - Receiver**, selecione uma execução concluída com sucesso e baixe o artefato **ReplayX-Receiver-APK-debug** na seção **Artifacts**. Extraia o ZIP baixado e instale o arquivo `app-debug.apk` no Android.
 
-O artefato pode ser baixado em **Actions → Build APK - Receiver → execução concluída → Artifacts → ReplayX-Receiver-APK-unsigned**.
+## Como instalar
 
-## Observações importantes
+No celular, habilite a instalação de aplicativos da fonte usada para abrir o APK, quando o Android solicitar, e toque no arquivo `app-debug.apk`. Esse APK é adequado para testes e instalação manual, mas não deve ser usado como versão final de distribuição.
 
-Um APK sem assinatura não é adequado para distribuição final e pode não ser instalável em todos os dispositivos. Para distribuição, atualização ou publicação, o Android exige uma assinatura válida; nesse caso, será necessário restaurar uma configuração de assinatura protegida por secrets.
+## Limitações
 
-O projeto também contém uma verificação de assinatura em runtime. Como o APK sem assinatura não possui o certificado de release esperado, o aplicativo pode fechar ao iniciar ou bloquear essa verificação. Isso é esperado para este modo de build e não indica falha do workflow.
+O APK debug usa a chave automática de desenvolvimento do Gradle. Ele não é compatível para atualizar uma versão assinada com outro certificado e não deve ser publicado em lojas. O código permite a execução do modo debug sem exigir o certificado de release esperado; essa exceção existe somente para testes. Nos builds release, a verificação de certificado permanece ativa.
 
-O arquivo `.jks` e sua versão `.b64` continuam bloqueados pelo `.gitignore` e não devem ser enviados ao repositório. Os secrets antigos de assinatura não são mais usados pelo workflow; eles podem ser removidos manualmente em **Settings → Secrets and variables → Actions** se não forem necessários para outro fluxo.
+O keystore de release e seus arquivos Base64 continuam fora do repositório e não são necessários para este fluxo de instalação.

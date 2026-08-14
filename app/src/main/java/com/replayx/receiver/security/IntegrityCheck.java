@@ -17,6 +17,8 @@ public final class IntegrityCheck {
     public static boolean isValid(Context ctx) {
         try {
             if (!ctx.getPackageName().equals(PACKAGE)) return false;
+            // O build debug usa a chave automática do Gradle e é destinado apenas a testes.
+            if (BuildConfig.DEBUG) return true;
             int flags = ctx.getApplicationInfo().flags;
             boolean debuggable = (flags & android.content.pm.ApplicationInfo.FLAG_DEBUGGABLE) != 0;
             if (debuggable) return false;

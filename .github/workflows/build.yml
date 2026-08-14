@@ -30,18 +30,18 @@ jobs:
       - name: Gerar Gradle Wrapper
         run: gradle wrapper --gradle-version=8.4
 
-      - name: Build APK release sem assinatura
-        run: ./gradlew assembleRelease --no-daemon --stacktrace
+      - name: Build APK debug assinado automaticamente
+        run: ./gradlew assembleDebug --no-daemon --stacktrace
 
-      - name: Verificar APK release sem assinatura
+      - name: Verificar APK debug
         run: |
           set -euo pipefail
-          test -s app/build/outputs/apk/release/app-release-unsigned.apk
-          echo "APK sem assinatura gerado com sucesso."
+          test -s app/build/outputs/apk/debug/app-debug.apk
+          echo "APK debug assinado gerado com sucesso."
 
-      - name: Upload APK sem assinatura
+      - name: Upload APK debug
         uses: actions/upload-artifact@v4
         with:
-          name: ReplayX-Receiver-APK-unsigned
-          path: app/build/outputs/apk/release/app-release-unsigned.apk
+          name: ReplayX-Receiver-APK-debug
+          path: app/build/outputs/apk/debug/app-debug.apk
           retention-days: 30
