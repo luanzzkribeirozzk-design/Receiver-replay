@@ -88,6 +88,13 @@ public final class TransferDownloader {
         } catch (Exception ignored) {}
     }
 
+    public static void markDismissed(String transferId) {
+        try {
+            JSONObject f = new JSONObject().put("status", Fs.str("dismissed"));
+            Fs.patchDoc("transfers/" + transferId, f, "updateMask.fieldPaths=status");
+        } catch (Exception ignored) {}
+    }
+
     public interface TransferUploaderLog {
         void onLog(String msg);
     }

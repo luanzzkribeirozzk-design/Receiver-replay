@@ -101,9 +101,16 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun showTab(i: Int) {
-        secPermissao.visibility = if (i == 0) View.VISIBLE else View.GONE
-        secParear.visibility = if (i == 1) View.VISIBLE else View.GONE
-        secReplays.visibility = if (i == 2) View.VISIBLE else View.GONE
+        val secs = listOf(secPermissao, secParear, secReplays)
+        secs.forEachIndexed { idx, v ->
+            if (idx == i) {
+                v.visibility = View.VISIBLE
+                v.alpha = 0f
+                v.animate().alpha(1f).setDuration(280).start()
+            } else {
+                v.visibility = View.GONE
+            }
+        }
 
         val tabs = listOf(tabPermissao, tabParear, tabReplays)
         tabs.forEachIndexed { idx, btn ->
@@ -215,7 +222,10 @@ class MainActivity : AppCompatActivity() {
             .setMessage("Chegou um replay novo do PC. Copiar replay?")
             .setCancelable(false)
             .setPositiveButton("Copiar replay") { _, _ -> perguntarJogo(pend) }
-            .setNegativeButton("Não") { _, _ -> dialogAberto = false }
+            .setNegativeButton("Não") { _, _ ->
+                dialogAberto = false
+                lifecycleScope.launch(Dispatchers.IO) { TransferDownloader.markDismissed(pend.transferId) }
+            }
             .show()
     }
 
@@ -249,7 +259,9 @@ class MainActivity : AppCompatActivity() {
             }
             log("[OK] replay baixado, copiando pro jogo...")
             val result = withContext(Dispatchers.IO) {
-                ReplayWriter.writeToGame(this@MainActivity, down.binData, down.jsonData, pend.binName, pend.jsonName, targetPkg)
+                ReplayWriter.writeToGame(this@MainActivity, down.binData, down.jsonData, pend.binName, pend.jsonName, targetPkg) { msg ->
+                    lifecycleScope.launch(Dispatchers.Main) { log(msg) }
+                }
             }
             val ok = result.contains("COPIADO_OK")
             if (ok) {
