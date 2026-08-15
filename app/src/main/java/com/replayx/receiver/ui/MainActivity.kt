@@ -1,10 +1,13 @@
 package com.replayx.receiver.ui
 
+import android.Manifest
 import android.content.pm.PackageManager
+import android.os.Build
 import android.os.Bundle
 import android.view.View
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
+import androidx.core.app.ActivityCompat
 import androidx.lifecycle.lifecycleScope
 import com.replayx.receiver.R
 import com.replayx.receiver.util.*
@@ -28,17 +31,21 @@ class MainActivity : AppCompatActivity() {
     private lateinit var secParear: View
     private lateinit var secReplays: View
 
+    private lateinit var tabPermissao: android.widget.Button
+    private lateinit var tabParear: android.widget.Button
+    private lateinit var tabReplays: android.widget.Button
+
     private lateinit var etCodigo: android.widget.EditText
     private lateinit var boxPareado: View
     private lateinit var tvSemReplay: android.widget.TextView
 
     private val SHIZUKU_CODE = 3001
+    private val STORAGE_CODE = 3002
     private val binderReceived = Shizuku.OnBinderReceivedListener { checarAcesso() }
     private val binderDead = Shizuku.OnBinderDeadListener { checarAcesso() }
     private var dialogAberto = false
 
     override fun onCreate(savedInstanceState: Bundle?) {
-        window.setFlags(android.view.WindowManager.LayoutParams.FLAG_SECURE, android.view.WindowManager.LayoutParams.FLAG_SECURE)
         super.onCreate(savedInstanceState)
 
         if (!com.replayx.receiver.security.IntegrityCheck.isValid(this)) {
@@ -58,18 +65,24 @@ class MainActivity : AppCompatActivity() {
         secParear = findViewById(R.id.secParear)
         secReplays = findViewById(R.id.secReplays)
 
+        tabPermissao = findViewById(R.id.tabPermissao)
+        tabParear = findViewById(R.id.tabParear)
+        tabReplays = findViewById(R.id.tabReplays)
+
         etCodigo = findViewById(R.id.etCodigo)
         boxPareado = findViewById(R.id.boxPareado)
         tvSemReplay = findViewById(R.id.tvSemReplay)
 
-        findViewById<View>(R.id.tabPermissao).setOnClickListener { showTab(0) }
-        findViewById<View>(R.id.tabParear).setOnClickListener { showTab(1) }
-        findViewById<View>(R.id.tabReplays).setOnClickListener { showTab(2) }
+        tabPermissao.setOnClickListener { showTab(0) }
+        tabParear.setOnClickListener { showTab(1) }
+        tabReplays.setOnClickListener { showTab(2) }
 
         findViewById<View>(R.id.btnAbrirShizuku).setOnClickListener { abrirShizuku() }
+        findViewById<View>(R.id.btnSolicitarArquivos).setOnClickListener { solicitarArquivos() }
         findViewById<View>(R.id.btnParear).setOnClickListener { parear() }
         findViewById<View>(R.id.btnDesparearRecv).setOnClickListener { desparear() }
         findViewById<View>(R.id.btnVerificarReplay).setOnClickListener { verificarReplayPendente(manual = true) }
+        findViewById<View>(R.id.btnLimparLogs).setOnClickListener { tvLog.text = "" }
 
         try {
             Shizuku.addBinderReceivedListenerSticky(binderReceived)
@@ -84,7 +97,6 @@ class MainActivity : AppCompatActivity() {
     override fun onResume() {
         super.onResume()
         PairingManager.refreshBattery(this)
-        // Confere sozinho se tem replay esperando assim que o app abre/volta ao primeiro plano
         verificarReplayPendente(manual = false)
     }
 
@@ -92,6 +104,17 @@ class MainActivity : AppCompatActivity() {
         secPermissao.visibility = if (i == 0) View.VISIBLE else View.GONE
         secParear.visibility = if (i == 1) View.VISIBLE else View.GONE
         secReplays.visibility = if (i == 2) View.VISIBLE else View.GONE
+
+        val tabs = listOf(tabPermissao, tabParear, tabReplays)
+        tabs.forEachIndexed { idx, btn ->
+            if (idx == i) {
+                btn.setBackgroundResource(R.drawable.ios_tab_selected)
+                btn.setTextColor(0xFFFFFFFF.toInt())
+            } else {
+                btn.setBackgroundColor(0x00000000)
+                btn.setTextColor(0xFF8E8E93.toInt())
+            }
+        }
     }
 
     private fun checarAcesso() {
@@ -100,9 +123,9 @@ class MainActivity : AppCompatActivity() {
             val shizuku = withContext(Dispatchers.IO) { RootShell.hasShizuku() }
             runOnUiThread {
                 when {
-                    root -> { tvShellStatus.text = "● ACESSO ROOT ATIVO"; tvShellStatus.setTextColor(0xFF33CC55.toInt()) }
-                    shizuku -> { tvShellStatus.text = "● SHIZUKU ATIVO"; tvShellStatus.setTextColor(0xFF33CC55.toInt()) }
-                    else -> { tvShellStatus.text = "● SEM ACESSO (root/Shizuku)"; tvShellStatus.setTextColor(0xFFFF4444.toInt()) }
+                    root -> { tvShellStatus.text = "● Acesso root ativo"; tvShellStatus.setTextColor(0xFF34C759.toInt()) }
+                    shizuku -> { tvShellStatus.text = "● Shizuku ativo"; tvShellStatus.setTextColor(0xFF34C759.toInt()) }
+                    else -> { tvShellStatus.text = "● Sem acesso (root/Shizuku)"; tvShellStatus.setTextColor(0xFFFF453A.toInt()) }
                 }
             }
         }
@@ -121,6 +144,18 @@ class MainActivity : AppCompatActivity() {
             }
         } catch (e: Exception) {
             log("[ERR] " + e.message)
+        }
+    }
+
+    private fun solicitarArquivos() {
+        if (Build.VERSION.SDK_INT <= 32) {
+            ActivityCompat.requestPermissions(
+                this,
+                arrayOf(Manifest.permission.READ_EXTERNAL_STORAGE, Manifest.permission.WRITE_EXTERNAL_STORAGE),
+                STORAGE_CODE
+            )
+        } else {
+            log("[OK] Nesse Android a permissão de arquivos é controlada por root/Shizuku, não precisa de permissão separada")
         }
     }
 
@@ -199,7 +234,7 @@ class MainActivity : AppCompatActivity() {
     private fun processarCopia(pend: TransferDownloader.Pending, targetPkg: String) {
         showTab(2)
         overlayAguarde.visibility = View.VISIBLE
-        tvAguarde.text = "AGUARDE, COPIANDO REPLAY..."
+        tvAguarde.text = "Copiando replay…"
         val startMs = System.currentTimeMillis()
         lifecycleScope.launch {
             log("--------------------------------")
@@ -208,7 +243,7 @@ class MainActivity : AppCompatActivity() {
                 TransferDownloader.download(pend) { msg -> lifecycleScope.launch(Dispatchers.Main) { log(msg) } }
             }
             if (down == null) {
-                log("[ERR] FALHA_AO_BAIXAR_REPLAY")
+                log("[ERR] Falha ao baixar replay")
                 overlayAguarde.visibility = View.GONE
                 return@launch
             }

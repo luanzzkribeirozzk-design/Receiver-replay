@@ -2,7 +2,7 @@
 <FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="#080800">
+    android:background="#000000">
 
     <LinearLayout
         android:layout_width="match_parent"
@@ -13,83 +13,89 @@
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:background="#00000088"
             android:orientation="vertical"
             android:paddingStart="20dp"
             android:paddingEnd="20dp"
-            android:paddingTop="44dp"
+            android:paddingTop="50dp"
             android:paddingBottom="14dp">
 
             <TextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="RECEPTOR"
-                android:textColor="#FFD700"
-                android:textSize="26sp"
-                android:textStyle="bold" />
+                android:text="Receptor"
+                android:textColor="#FFFFFF"
+                android:textSize="28sp"
+                android:textStyle="bold"
+                android:fontFamily="sans-serif-medium" />
 
             <TextView
                 android:id="@+id/tvShellStatus"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="● VERIFICANDO ACESSO"
-                android:textColor="#FFD700"
-                android:textSize="10sp"
-                android:textStyle="bold"
+                android:text="Verificando acesso…"
+                android:textColor="#8E8E93"
+                android:textSize="13sp"
                 android:layout_marginTop="4dp" />
 
         </LinearLayout>
 
-        <View android:layout_width="match_parent" android:layout_height="1dp" android:background="#443300" />
-
-        <!-- ABAS -->
+        <!-- ABAS (segmented control) -->
         <LinearLayout
             android:layout_width="match_parent"
-            android:layout_height="wrap_content"
+            android:layout_height="44dp"
+            android:layout_marginStart="16dp"
+            android:layout_marginEnd="16dp"
+            android:layout_marginBottom="12dp"
             android:orientation="horizontal"
-            android:background="#00000066">
+            android:background="@drawable/ios_tab_bar"
+            android:padding="3dp">
 
             <Button
                 android:id="@+id/tabPermissao"
                 android:layout_width="0dp"
-                android:layout_height="46dp"
+                android:layout_height="match_parent"
                 android:layout_weight="1"
-                android:text="PERMISSÃO"
-                android:textSize="10sp"
+                android:text="Acesso"
+                android:textAllCaps="false"
+                android:textSize="12sp"
                 android:textStyle="bold"
-                android:textColor="#FFD700"
-                android:background="@drawable/btn_clear"
-                android:stateListAnimator="@null" />
+                android:textColor="#FFFFFF"
+                android:background="@drawable/ios_tab_selected"
+                android:stateListAnimator="@null"
+                android:insetTop="0dp"
+                android:insetBottom="0dp" />
 
             <Button
                 android:id="@+id/tabParear"
                 android:layout_width="0dp"
-                android:layout_height="46dp"
+                android:layout_height="match_parent"
                 android:layout_weight="1"
-                android:layout_marginStart="4dp"
-                android:text="PAREAR"
-                android:textSize="10sp"
+                android:text="Parear"
+                android:textAllCaps="false"
+                android:textSize="12sp"
                 android:textStyle="bold"
-                android:textColor="#FFD700"
-                android:background="@drawable/btn_clear"
-                android:stateListAnimator="@null" />
+                android:textColor="#8E8E93"
+                android:background="@android:color/transparent"
+                android:stateListAnimator="@null"
+                android:insetTop="0dp"
+                android:insetBottom="0dp" />
 
             <Button
                 android:id="@+id/tabReplays"
                 android:layout_width="0dp"
-                android:layout_height="46dp"
+                android:layout_height="match_parent"
                 android:layout_weight="1"
-                android:layout_marginStart="4dp"
-                android:text="REPLAYS"
-                android:textSize="10sp"
+                android:text="Replays"
+                android:textAllCaps="false"
+                android:textSize="12sp"
                 android:textStyle="bold"
-                android:textColor="#FFD700"
-                android:background="@drawable/btn_clear"
-                android:stateListAnimator="@null" />
+                android:textColor="#8E8E93"
+                android:background="@android:color/transparent"
+                android:stateListAnimator="@null"
+                android:insetTop="0dp"
+                android:insetBottom="0dp" />
 
         </LinearLayout>
-
-        <View android:layout_width="match_parent" android:layout_height="1dp" android:background="#181200" />
 
         <ScrollView
             android:layout_width="match_parent"
@@ -98,34 +104,59 @@
 
             <FrameLayout
                 android:layout_width="match_parent"
-                android:layout_height="wrap_content">
+                android:layout_height="wrap_content"
+                android:paddingStart="16dp"
+                android:paddingEnd="16dp">
 
                 <!-- SECAO PERMISSAO -->
                 <LinearLayout
                     android:id="@+id/secPermissao"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:orientation="vertical"
-                    android:padding="18dp">
+                    android:orientation="vertical">
 
-                    <TextView
+                    <LinearLayout
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        android:text="Pra copiar o replay recebido pra dentro do Free Fire, esse app precisa de acesso via Shizuku (ou root, se o aparelho tiver)."
-                        android:textColor="#AAAAAA"
-                        android:textSize="12sp"
-                        android:layout_marginBottom="16dp" />
+                        android:orientation="vertical"
+                        android:background="@drawable/ios_card"
+                        android:padding="18dp">
 
-                    <Button
-                        android:id="@+id/btnAbrirShizuku"
-                        android:layout_width="match_parent"
-                        android:layout_height="52dp"
-                        android:text="ABRIR / SOLICITAR SHIZUKU"
-                        android:textColor="#000000"
-                        android:textSize="13sp"
-                        android:textStyle="bold"
-                        android:background="@drawable/btn_primary"
-                        android:stateListAnimator="@null" />
+                        <TextView
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:text="Pra copiar o replay recebido pra dentro do Free Fire, esse app precisa de acesso via Shizuku (ou root, se tiver)."
+                            android:textColor="#AEAEB2"
+                            android:textSize="13sp"
+                            android:lineSpacingExtra="3dp"
+                            android:layout_marginBottom="16dp" />
+
+                        <Button
+                            android:id="@+id/btnAbrirShizuku"
+                            android:layout_width="match_parent"
+                            android:layout_height="52dp"
+                            android:text="Abrir / solicitar Shizuku"
+                            android:textAllCaps="false"
+                            android:textColor="#FFFFFF"
+                            android:textSize="14.5sp"
+                            android:textStyle="bold"
+                            android:background="@drawable/ios_btn_primary"
+                            android:stateListAnimator="@null" />
+
+                        <Button
+                            android:id="@+id/btnSolicitarArquivos"
+                            android:layout_width="match_parent"
+                            android:layout_height="52dp"
+                            android:text="Permitir acesso a arquivos"
+                            android:textAllCaps="false"
+                            android:textColor="#FFFFFF"
+                            android:textSize="14.5sp"
+                            android:textStyle="bold"
+                            android:background="@drawable/ios_btn_secondary"
+                            android:stateListAnimator="@null"
+                            android:layout_marginTop="10dp" />
+
+                    </LinearLayout>
 
                 </LinearLayout>
 
@@ -135,75 +166,99 @@
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:orientation="vertical"
-                    android:padding="18dp"
                     android:visibility="gone">
 
-                    <TextView
+                    <LinearLayout
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        android:text="Informe o código gerado no app do PC/emulador pra parear os dois aparelhos."
-                        android:textColor="#AAAAAA"
-                        android:textSize="12sp"
-                        android:layout_marginBottom="16dp" />
+                        android:orientation="vertical"
+                        android:background="@drawable/ios_card"
+                        android:padding="18dp">
 
-                    <EditText
-                        android:id="@+id/etCodigo"
-                        android:layout_width="match_parent"
-                        android:layout_height="56dp"
-                        android:background="@drawable/input_bg"
-                        android:hint="CÓDIGO DE 6 DÍGITOS"
-                        android:textColorHint="#665500"
-                        android:textColor="#FFD700"
-                        android:textSize="20sp"
-                        android:textStyle="bold"
-                        android:gravity="center"
-                        android:letterSpacing="0.15"
-                        android:inputType="textCapCharacters"
-                        android:maxLength="6"
-                        android:paddingStart="16dp"
-                        android:paddingEnd="16dp" />
+                        <TextView
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:text="Informe o código gerado no app do PC/emulador pra parear os dois aparelhos."
+                            android:textColor="#AEAEB2"
+                            android:textSize="13sp"
+                            android:lineSpacingExtra="3dp"
+                            android:layout_marginBottom="16dp" />
 
-                    <Button
-                        android:id="@+id/btnParear"
-                        android:layout_width="match_parent"
-                        android:layout_height="52dp"
-                        android:text="PAREAR DISPOSITIVO"
-                        android:textColor="#000000"
-                        android:textSize="13sp"
-                        android:textStyle="bold"
-                        android:background="@drawable/btn_primary"
-                        android:stateListAnimator="@null"
-                        android:layout_marginTop="14dp" />
+                        <EditText
+                            android:id="@+id/etCodigo"
+                            android:layout_width="match_parent"
+                            android:layout_height="56dp"
+                            android:background="@drawable/ios_input"
+                            android:hint="Código de 6 dígitos"
+                            android:textColorHint="#8E8E93"
+                            android:textColor="#0A84FF"
+                            android:textSize="19sp"
+                            android:textStyle="bold"
+                            android:gravity="center"
+                            android:letterSpacing="0.12"
+                            android:inputType="textCapCharacters"
+                            android:maxLength="6"
+                            android:paddingStart="16dp"
+                            android:paddingEnd="16dp" />
+
+                        <Button
+                            android:id="@+id/btnParear"
+                            android:layout_width="match_parent"
+                            android:layout_height="52dp"
+                            android:text="Parear dispositivo"
+                            android:textAllCaps="false"
+                            android:textColor="#FFFFFF"
+                            android:textSize="14.5sp"
+                            android:textStyle="bold"
+                            android:background="@drawable/ios_btn_primary"
+                            android:stateListAnimator="@null"
+                            android:layout_marginTop="14dp" />
+
+                    </LinearLayout>
 
                     <LinearLayout
                         android:id="@+id/boxPareado"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
                         android:orientation="vertical"
-                        android:background="@drawable/input_bg"
-                        android:padding="16dp"
-                        android:layout_marginTop="16dp"
+                        android:background="@drawable/ios_card"
+                        android:padding="18dp"
+                        android:layout_marginTop="14dp"
                         android:visibility="gone">
 
-                        <TextView
+                        <LinearLayout
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
-                            android:text="● PAREADO COM O ENVIADOR"
-                            android:textColor="#33CC55"
-                            android:textSize="11sp"
-                            android:textStyle="bold" />
+                            android:orientation="horizontal"
+                            android:gravity="center_vertical"
+                            android:background="@drawable/ios_pill_ok"
+                            android:paddingStart="10dp"
+                            android:paddingEnd="10dp"
+                            android:paddingTop="4dp"
+                            android:paddingBottom="4dp">
+
+                            <TextView
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:text="● Pareado com o Enviador"
+                                android:textColor="#34C759"
+                                android:textSize="11sp"
+                                android:textStyle="bold" />
+
+                        </LinearLayout>
 
                         <Button
                             android:id="@+id/btnDesparearRecv"
                             android:layout_width="match_parent"
-                            android:layout_height="44dp"
-                            android:text="DESPAREAR"
+                            android:layout_height="48dp"
+                            android:text="Desparear"
+                            android:textAllCaps="false"
                             android:textColor="#FFFFFF"
-                            android:textSize="12sp"
+                            android:textSize="13.5sp"
                             android:textStyle="bold"
-                            android:background="@drawable/btn_secondary"
+                            android:background="@drawable/ios_btn_danger"
                             android:stateListAnimator="@null"
-                            android:layout_marginTop="12dp" />
+                            android:layout_marginTop="14dp" />
 
                     </LinearLayout>
 
@@ -215,37 +270,48 @@
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:orientation="vertical"
-                    android:padding="18dp"
                     android:visibility="gone">
 
-                    <TextView
+                    <LinearLayout
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        android:text="Se o PC mandou um replay enquanto o app estava fechado, ele aparece aqui assim que você abrir."
-                        android:textColor="#AAAAAA"
-                        android:textSize="12sp"
-                        android:layout_marginBottom="16dp" />
+                        android:orientation="vertical"
+                        android:background="@drawable/ios_card"
+                        android:padding="18dp">
 
-                    <Button
-                        android:id="@+id/btnVerificarReplay"
-                        android:layout_width="match_parent"
-                        android:layout_height="52dp"
-                        android:text="VERIFICAR REPLAY PENDENTE"
-                        android:textColor="#000000"
-                        android:textSize="13sp"
-                        android:textStyle="bold"
-                        android:background="@drawable/btn_primary"
-                        android:stateListAnimator="@null" />
+                        <TextView
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:text="Se o PC mandou um replay enquanto o app estava fechado, ele aparece assim que você abrir. Também dá pra checar na mão aqui."
+                            android:textColor="#AEAEB2"
+                            android:textSize="13sp"
+                            android:lineSpacingExtra="3dp"
+                            android:layout_marginBottom="16dp" />
 
-                    <TextView
-                        android:id="@+id/tvSemReplay"
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:text="Nenhum replay pendente no momento."
-                        android:textColor="#665500"
-                        android:textSize="12sp"
-                        android:gravity="center"
-                        android:layout_marginTop="16dp" />
+                        <Button
+                            android:id="@+id/btnVerificarReplay"
+                            android:layout_width="match_parent"
+                            android:layout_height="52dp"
+                            android:text="Verificar replay pendente"
+                            android:textAllCaps="false"
+                            android:textColor="#FFFFFF"
+                            android:textSize="14.5sp"
+                            android:textStyle="bold"
+                            android:background="@drawable/ios_btn_primary"
+                            android:stateListAnimator="@null" />
+
+                        <TextView
+                            android:id="@+id/tvSemReplay"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:text="Nenhum replay pendente no momento."
+                            android:textColor="#8E8E93"
+                            android:textSize="12.5sp"
+                            android:gravity="center"
+                            android:layout_marginTop="16dp"
+                            android:visibility="gone" />
+
+                    </LinearLayout>
 
                 </LinearLayout>
 
@@ -253,48 +319,62 @@
 
         </ScrollView>
 
-        <View android:layout_width="match_parent" android:layout_height="1dp" android:background="#181200" />
-
+        <!-- LOGS -->
         <LinearLayout
             android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:background="#00000088"
-            android:orientation="horizontal"
-            android:paddingStart="14dp"
-            android:paddingEnd="14dp"
-            android:paddingTop="6dp"
-            android:paddingBottom="6dp">
+            android:layout_height="150dp"
+            android:orientation="vertical"
+            android:background="@drawable/ios_card"
+            android:layout_margin="16dp"
+            android:padding="14dp">
 
-            <TextView
-                android:layout_width="0dp"
-                android:layout_height="wrap_content"
-                android:layout_weight="1"
-                android:text="root@receiver:~/ transfer_log"
-                android:textColor="#00AA22"
-                android:textSize="10sp"
-                android:fontFamily="monospace" />
-
-        </LinearLayout>
-
-        <ScrollView
-            android:id="@+id/scrollLog"
-            android:layout_width="match_parent"
-            android:layout_height="120dp"
-            android:background="#00000099"
-            android:padding="12dp"
-            android:scrollbars="none">
-
-            <TextView
-                android:id="@+id/tvLog"
+            <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:fontFamily="monospace"
-                android:text=""
-                android:textColor="#FFFFFF"
-                android:textSize="10.5sp"
-                android:lineSpacingExtra="2dp" />
+                android:orientation="horizontal"
+                android:gravity="center_vertical">
 
-        </ScrollView>
+                <TextView
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:text="Logs"
+                    android:textColor="#8E8E93"
+                    android:textSize="12sp"
+                    android:textStyle="bold" />
+
+                <TextView
+                    android:id="@+id/btnLimparLogs"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Limpar"
+                    android:textColor="#0A84FF"
+                    android:textSize="12sp"
+                    android:textStyle="bold"
+                    android:padding="4dp" />
+
+            </LinearLayout>
+
+            <ScrollView
+                android:id="@+id/scrollLog"
+                android:layout_width="match_parent"
+                android:layout_height="0dp"
+                android:layout_weight="1"
+                android:scrollbars="none">
+
+                <TextView
+                    android:id="@+id/tvLog"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:fontFamily="monospace"
+                    android:text=""
+                    android:textColor="#C7C7CC"
+                    android:textSize="10.5sp"
+                    android:lineSpacingExtra="2dp" />
+
+            </ScrollView>
+
+        </LinearLayout>
 
     </LinearLayout>
 
@@ -303,35 +383,35 @@
         android:id="@+id/overlayAguarde"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
-        android:background="#DD000000"
+        android:background="#CC000000"
         android:clickable="true"
         android:focusable="true"
         android:visibility="gone">
 
         <LinearLayout
-            android:layout_width="wrap_content"
+            android:layout_width="220dp"
             android:layout_height="wrap_content"
             android:layout_gravity="center"
             android:orientation="vertical"
-            android:gravity="center">
+            android:gravity="center"
+            android:background="@drawable/ios_card"
+            android:padding="26dp">
 
             <ProgressBar
-                android:layout_width="52dp"
-                android:layout_height="52dp"
-                android:indeterminateTint="#FFD700"
-                android:layout_marginBottom="18dp" />
+                android:layout_width="40dp"
+                android:layout_height="40dp"
+                android:indeterminateTint="#0A84FF"
+                android:layout_marginBottom="16dp" />
 
             <TextView
                 android:id="@+id/tvAguarde"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="AGUARDE..."
-                android:textColor="#FFD700"
-                android:textSize="16sp"
+                android:text="Aguarde…"
+                android:textColor="#FFFFFF"
+                android:textSize="14.5sp"
                 android:textStyle="bold"
-                android:gravity="center"
-                android:paddingStart="30dp"
-                android:paddingEnd="30dp" />
+                android:gravity="center" />
 
         </LinearLayout>
 
