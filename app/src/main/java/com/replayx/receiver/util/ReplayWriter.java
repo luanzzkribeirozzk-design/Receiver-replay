@@ -106,10 +106,12 @@ public final class ReplayWriter {
             if (text.length() > 0 && text.charAt(0) == '\ufeff') text = text.substring(1);
             JSONObject metadata = new JSONObject(text.trim());
             String version = installedVersion(ctx, targetPkg);
-            if (version == null) return null;
-
-            if (metadata.has("Version")) metadata.put("Version", version);
-            if (metadata.has("GameVersion")) metadata.put("GameVersion", version);
+            if (version != null) {
+                if (metadata.has("Version")) metadata.put("Version", version);
+                if (metadata.has("GameVersion")) metadata.put("GameVersion", version);
+            } else {
+                log.onLog("[AVISO] versão do pacote não detectada; JSON original será preservado");
+            }
             if (metadata.has("AppId")) metadata.put("AppId", targetPkg);
             log.onLog("[OK] JSON validado para " + targetPkg + " versão " + version);
             return metadata.toString().getBytes(StandardCharsets.UTF_8);
@@ -144,7 +146,7 @@ public final class ReplayWriter {
                 return "ERR: BIN_JSON_COM_NOMES_DIFERENTES";
             }
             if (installedVersion(ctx, targetPkg) == null) {
-                return "ERR: JOGO_DESTINO_NAO_INSTALADO";
+                log.onLog("[AVISO] pacote não visível ao Android; tentando a pasta da variante mesmo assim");
             }
 
             byte[] finalJson = normalizeJson(ctx, jsonData, targetPkg, log);

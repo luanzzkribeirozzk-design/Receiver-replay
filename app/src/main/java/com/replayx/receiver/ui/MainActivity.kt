@@ -237,32 +237,28 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun perguntarJogo(pend: TransferDownloader.Pending) {
-        val detectedTarget = when (pend.sourcePkg) {
-            ReplayWriter.FFM_PKG -> ReplayWriter.FFM_PKG
-            ReplayWriter.FFN_PKG -> ReplayWriter.FFN_PKG
-            else -> null
+        val origem = when (pend.sourcePkg) {
+            ReplayWriter.FFM_PKG -> "Origem detectada: Free Fire MAX. Você ainda pode escolher outra opção."
+            ReplayWriter.FFN_PKG -> "Origem detectada: Free Fire Normal. Você ainda pode escolher outra opção."
+            else -> "A origem não foi identificada. Escolha onde deseja copiar."
         }
-        if (detectedTarget != null) {
-            dialogAberto = false
-            val label = if (detectedTarget == ReplayWriter.FFM_PKG) "FF MAX" else "FF Normal"
-            log("[OK] variante detectada automaticamente: $label")
-            processarCopia(pend, detectedTarget)
-            return
-        }
-
         AlertDialog.Builder(this)
-            .setTitle("Variante não identificada")
-            .setMessage("A transferência não informou se o replay veio do FF MAX ou do FF Normal. Escolha manualmente.")
-            .setItems(arrayOf("FF MAX", "FF Normal")) { _, which ->
-                val targetPkg = if (which == 0) ReplayWriter.FFM_PKG else ReplayWriter.FFN_PKG
+            .setTitle("Onde copiar o replay?")
+            .setMessage(origem)
+            .setItems(arrayOf("Free Fire MAX", "Free Fire Normal", "Copiar para os dois")) { _, which ->
+                val targets = when (which) {
+                    0 -> listOf(ReplayWriter.FFM_PKG)
+                    1 -> listOf(ReplayWriter.FFN_PKG)
+                    else -> listOf(ReplayWriter.FFM_PKG, ReplayWriter.FFN_PKG)
+                }
                 dialogAberto = false
-                processarCopia(pend, targetPkg)
+                processarCopias(pend, targets)
             }
             .setOnCancelListener { dialogAberto = false }
             .show()
     }
 
-    private fun processarCopia(pend: TransferDownloader.Pending, targetPkg: String) {
+    private fun processarCopias(pend: TransferDownloader.Pending, targets: List<String>) {
         showTab(2)
         overlayAguarde.visibility = View.VISIBLE
         tvAguarde.text = "Copiando replay…"
@@ -278,18 +274,30 @@ class MainActivity : AppCompatActivity() {
                 overlayAguarde.visibility = View.GONE
                 return@launch
             }
-            log("[OK] replay baixado, copiando pro jogo...")
-            val result = withContext(Dispatchers.IO) {
-                ReplayWriter.writeToGame(this@MainActivity, down.binData, down.jsonData, pend.binName, pend.jsonName, targetPkg) { msg ->
-                    lifecycleScope.launch(Dispatchers.Main) { log(msg) }
+            log("[OK] replay baixado; destinos selecionados: ${targets.size}")
+            var copied = 0
+            for (targetPkg in targets) {
+                val label = if (targetPkg == ReplayWriter.FFM_PKG) "Free Fire MAX" else "Free Fire Normal"
+                log("[..] tentando copiar para $label")
+                val result = withContext(Dispatchers.IO) {
+                    ReplayWriter.writeToGame(this@MainActivity, down.binData, down.jsonData, pend.binName, pend.jsonName, targetPkg) { msg ->
+                        lifecycleScope.launch(Dispatchers.Main) { log(msg) }
+                    }
+                }
+                if (result.contains("COPIADO_OK")) {
+                    copied++
+                    log("[OK] replay copiado para $label")
+                } else {
+                    log("[ERR] $label: $result")
                 }
             }
-            val ok = result.contains("COPIADO_OK")
-            if (ok) {
+            if (copied > 0) {
                 withContext(Dispatchers.IO) { TransferDownloader.markCopied(pend.transferId) }
+                log("[OK] concluído: $copied/${targets.size} destino(s) copiado(s)")
+            } else {
+                log("[ERR] nenhum destino foi copiado; a transferência continua pendente para tentar novamente")
             }
             val elapsed = (System.currentTimeMillis() - startMs) / 1000.0
-            log(if (ok) "[OK] Replay copiado com sucesso" else "[ERR] $result")
             log("Concluído em %.1fs".format(elapsed))
             log("--------------------------------")
             overlayAguarde.visibility = View.GONE

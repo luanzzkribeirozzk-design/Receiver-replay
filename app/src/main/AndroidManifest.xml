@@ -7,6 +7,11 @@
     <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE"
         android:maxSdkVersion="29" />
 
+    <queries>
+        <package android:name="com.dts.freefiremax" />
+        <package android:name="com.dts.freefireth" />
+    </queries>
+
     <application
         android:allowBackup="false"
         android:networkSecurityConfig="@xml/network_security_config"
