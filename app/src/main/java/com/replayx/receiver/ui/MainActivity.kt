@@ -219,9 +219,14 @@ class MainActivity : AppCompatActivity() {
 
     private fun perguntarCopiar(pend: TransferDownloader.Pending) {
         dialogAberto = true
+        val origem = when (pend.sourcePkg) {
+            ReplayWriter.FFM_PKG -> "Free Fire MAX"
+            ReplayWriter.FFN_PKG -> "Free Fire Normal"
+            else -> "variante não identificada"
+        }
         AlertDialog.Builder(this)
             .setTitle("Replay recebido")
-            .setMessage("Chegou um replay novo do PC. Copiar replay?")
+            .setMessage("Chegou um replay novo do PC. Origem detectada: $origem. Copiar replay?")
             .setCancelable(false)
             .setPositiveButton("Copiar replay") { _, _ -> perguntarJogo(pend) }
             .setNegativeButton("Não") { _, _ ->
@@ -232,8 +237,22 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun perguntarJogo(pend: TransferDownloader.Pending) {
+        val detectedTarget = when (pend.sourcePkg) {
+            ReplayWriter.FFM_PKG -> ReplayWriter.FFM_PKG
+            ReplayWriter.FFN_PKG -> ReplayWriter.FFN_PKG
+            else -> null
+        }
+        if (detectedTarget != null) {
+            dialogAberto = false
+            val label = if (detectedTarget == ReplayWriter.FFM_PKG) "FF MAX" else "FF Normal"
+            log("[OK] variante detectada automaticamente: $label")
+            processarCopia(pend, detectedTarget)
+            return
+        }
+
         AlertDialog.Builder(this)
-            .setTitle("Copiar para qual jogo?")
+            .setTitle("Variante não identificada")
+            .setMessage("A transferência não informou se o replay veio do FF MAX ou do FF Normal. Escolha manualmente.")
             .setItems(arrayOf("FF MAX", "FF Normal")) { _, which ->
                 val targetPkg = if (which == 0) ReplayWriter.FFM_PKG else ReplayWriter.FFN_PKG
                 dialogAberto = false

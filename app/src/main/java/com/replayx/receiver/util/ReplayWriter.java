@@ -3,14 +3,14 @@ package com.replayx.receiver.util;
 import android.content.Context;
 import android.content.pm.PackageInfo;
 import android.content.pm.PackageManager;
+import org.json.JSONObject;
+
 import java.io.File;
 import java.io.FileOutputStream;
+import java.nio.charset.StandardCharsets;
+import java.util.Locale;
 
-/**
- * Escreve o replay recebido dentro da pasta do Free Fire escolhido (MAX ou
- * Normal) no celular, via Shizuku/root — reescreve Version/GameVersion/AppId
- * no JSON pra ficar compatível com a versão instalada e o jogo de destino.
- */
+/** Grava um par de replay (.bin + .json) na variante correta do Free Fire. */
 public final class ReplayWriter {
     private ReplayWriter() {}
 
@@ -21,16 +21,6 @@ public final class ReplayWriter {
         void onLog(String msg);
     }
 
-    private static String installedVersion(Context ctx, String pkg) {
-        try {
-            PackageInfo pi = ctx.getPackageManager().getPackageInfo(pkg, 0);
-            String v = pi.versionName;
-            return (v == null || v.trim().isEmpty()) ? null : v.trim();
-        } catch (Exception e) {
-            return null;
-        }
-    }
-
     private static final String[] BASES = {
         "/storage/emulated/0",
         "/sdcard",
@@ -39,80 +29,163 @@ public final class ReplayWriter {
         "/storage/self/primary"
     };
 
-    /** @return "COPIADO_OK" em sucesso (confirmado de verdade), ou uma mensagem de erro. */
+    private static final String[] SUBDIRS = {
+        "files/MReplays",
+        "files/Replays"
+    };
+
+    private static String installedVersion(Context ctx, String pkg) {
+        try {
+            PackageInfo pi = ctx.getPackageManager().getPackageInfo(pkg, 0);
+            String v = pi.versionName;
+            return (v == null || v.trim().isEmpty()) ? null : v.trim();
+        } catch (PackageManager.NameNotFoundException e) {
+            return null;
+        } catch (Exception e) {
+            return null;
+        }
+    }
+
+    private static String fileName(String value) {
+        if (value == null || value.trim().isEmpty()) return "";
+        return new File(value.trim()).getName();
+    }
+
+    private static boolean validName(String name, String extension) {
+        if (name == null || name.isEmpty() || name.equals(".") || name.equals("..")) return false;
+        return name.toLowerCase(Locale.US).endsWith(extension);
+    }
+
+    private static boolean sameStem(String binName, String jsonName) {
+        String binStem = binName.substring(0, binName.length() - 4);
+        String jsonStem = jsonName.substring(0, jsonName.length() - 5);
+        return !binStem.isEmpty() && binStem.equals(jsonStem);
+    }
+
+    /**
+     * Prefere a pasta que já contém arquivos criados pelo Free Fire. Se ainda
+     * estiver vazia, usa uma pasta existente; só cria MReplays como último caso.
+     */
+    private static String chooseDestination(String targetPkg, Log log) {
+        String firstExisting = null;
+        for (String base : BASES) {
+            for (String subdir : SUBDIRS) {
+                String dir = base + "/Android/data/" + targetPkg + "/" + subdir;
+                String exists = RootShell.run("[ -d \"" + dir + "\" ] && echo EXISTE || echo NAO_EXISTE");
+                log.onLog("[..] verificando pasta " + dir + " -> " + (exists == null ? "SEM_RESPOSTA" : exists.trim()));
+                if (exists == null || !exists.contains("EXISTE")) continue;
+                if (firstExisting == null) firstExisting = dir;
+
+                String bins = RootShell.run("ls -1 \"" + dir + "\"/*.bin 2>/dev/null | head -n 1");
+                String jsons = RootShell.run("ls -1 \"" + dir + "\"/*.json 2>/dev/null | head -n 1");
+                if (bins != null && !bins.trim().isEmpty() && jsons != null && !jsons.trim().isEmpty()) {
+                    log.onLog("[OK] pasta com par de replay existente: " + dir);
+                    return dir;
+                }
+            }
+        }
+        if (firstExisting != null) {
+            log.onLog("[OK] usando pasta existente ainda vazia: " + firstExisting);
+            return firstExisting;
+        }
+
+        for (String base : BASES) {
+            String dir = base + "/Android/data/" + targetPkg + "/files/MReplays";
+            String created = RootShell.run("mkdir -p \"" + dir + "\" 2>/dev/null && [ -d \"" + dir + "\" ] && echo EXISTE || echo NAO_EXISTE");
+            if (created != null && created.contains("EXISTE")) {
+                log.onLog("[OK] pasta criada: " + dir);
+                return dir;
+            }
+        }
+        return null;
+    }
+
+    private static byte[] normalizeJson(Context ctx, byte[] jsonData, String targetPkg, Log log) {
+        try {
+            String text = new String(jsonData, StandardCharsets.UTF_8);
+            if (text.length() > 0 && text.charAt(0) == '\ufeff') text = text.substring(1);
+            JSONObject metadata = new JSONObject(text.trim());
+            String version = installedVersion(ctx, targetPkg);
+            if (version == null) return null;
+
+            if (metadata.has("Version")) metadata.put("Version", version);
+            if (metadata.has("GameVersion")) metadata.put("GameVersion", version);
+            if (metadata.has("AppId")) metadata.put("AppId", targetPkg);
+            log.onLog("[OK] JSON validado para " + targetPkg + " versão " + version);
+            return metadata.toString().getBytes(StandardCharsets.UTF_8);
+        } catch (Exception e) {
+            log.onLog("[ERR] JSON_INVALIDO — não foi possível interpretar os metadados do replay");
+            return null;
+        }
+    }
+
+    /** @return COPIADO_OK somente quando .bin e .json existem e têm tamanho maior que zero. */
     public static String writeToGame(Context ctx, byte[] binData, byte[] jsonData,
                                       String binName, String jsonName, String targetPkg, Log log) {
         File tmpBin = null;
         File tmpJson = null;
         try {
-            // IMPORTANTE: grava na pasta EXTERNA do próprio app (getExternalFilesDir),
-            // não no cache interno — Shizuku (sem root) não consegue ler o cache
-            // interno de outro processo, só a área externa (mesma área onde o
-            // Free Fire guarda os replays dele).
-            File tmpDir = ctx.getExternalFilesDir(null);
+            if (!FFM_PKG.equals(targetPkg) && !FFN_PKG.equals(targetPkg)) {
+                return "ERR: VARIANTE_FREE_FIRE_INVALIDA";
+            }
+            if (binData == null || binData.length == 0) {
+                return "ERR: BIN_VAZIO_OU_INVALIDO";
+            }
+            if (jsonData == null || jsonData.length == 0) {
+                return "ERR: JSON_AUSENTE_OU_VAZIO — o jogo exige o par .bin + .json";
+            }
+
+            String safeBinName = fileName(binName);
+            String safeJsonName = fileName(jsonName);
+            if (!validName(safeBinName, ".bin") || !validName(safeJsonName, ".json")) {
+                return "ERR: NOMES_DE_REPLAY_INVALIDOS";
+            }
+            if (!sameStem(safeBinName, safeJsonName)) {
+                return "ERR: BIN_JSON_COM_NOMES_DIFERENTES";
+            }
+            if (installedVersion(ctx, targetPkg) == null) {
+                return "ERR: JOGO_DESTINO_NAO_INSTALADO";
+            }
+
+            byte[] finalJson = normalizeJson(ctx, jsonData, targetPkg, log);
+            if (finalJson == null || finalJson.length == 0) {
+                return "ERR: JSON_INVALIDO_OU_INCOMPATIVEL";
+            }
+
+            File tmpDir = ctx.getExternalFilesDir("replay_stage");
             if (tmpDir == null) tmpDir = ctx.getCacheDir();
-            tmpDir.mkdirs();
-
-            tmpBin = new File(tmpDir, "recv_" + System.currentTimeMillis() + ".bin");
+            if (!tmpDir.exists() && !tmpDir.mkdirs()) {
+                return "ERR: NAO_FOI_POSSIVEL_CRIAR_AREA_TEMPORARIA";
+            }
+            String stamp = String.valueOf(System.currentTimeMillis());
+            tmpBin = new File(tmpDir, "rx_stage_" + stamp + ".bin");
+            tmpJson = new File(tmpDir, "rx_stage_" + stamp + ".json");
             try (FileOutputStream fos = new FileOutputStream(tmpBin)) { fos.write(binData); }
+            try (FileOutputStream fos = new FileOutputStream(tmpJson)) { fos.write(finalJson); }
 
-            if (jsonData != null && jsonData.length > 0) {
-                tmpJson = new File(tmpDir, "recv_" + System.currentTimeMillis() + ".json");
-                try (FileOutputStream fos = new FileOutputStream(tmpJson)) { fos.write(jsonData); }
-            }
-
-            String version = installedVersion(ctx, targetPkg);
-            if (version == null) version = targetPkg.equals(FFM_PKG) ? "2.126.1" : "1.129.1";
-
-            if (binName == null || binName.trim().isEmpty()) binName = "replay.bin";
-            if (jsonName == null) jsonName = "";
-
-            // Acha a pasta de destino de verdade (testa cada candidato, igual o leitor do Enviador)
-            String dst = null;
-            for (String base : BASES) {
-                String dir = base + "/Android/data/" + targetPkg + "/files/MReplays";
-                String r = RootShell.run("mkdir -p \"" + dir + "\" 2>/dev/null && [ -d \"" + dir + "\" ] && echo EXISTE || echo NAO_EXISTE");
-                log.onLog("[..] testando destino " + dir + " -> " + (r == null ? "SEM_RESPOSTA" : r.trim()));
-                if (r != null && r.contains("EXISTE")) { dst = dir; break; }
-            }
+            String dst = chooseDestination(targetPkg, log);
             if (dst == null) {
-                return "ERR: NAO_FOI_POSSIVEL_CRIAR_PASTA_DESTINO (Free Fire " + targetPkg + " instalado?)";
+                return "ERR: NAO_FOI_POSSIVEL_LOCALIZAR_PASTA_DO_FREE_FIRE";
             }
 
+            String binDst = dst + "/" + safeBinName;
+            String jsonDst = dst + "/" + safeJsonName;
             StringBuilder cmd = new StringBuilder();
-            cmd.append("rm -f \"").append(dst).append("\"/*.bin \"").append(dst).append("\"/*.json 2>/dev/null; ");
-            cmd.append("cp -f \"").append(tmpBin.getAbsolutePath()).append("\" \"").append(dst).append("/").append(binName).append("\"; ");
-            cmd.append("chmod 666 \"").append(dst).append("/").append(binName).append("\" 2>/dev/null; ");
+            cmd.append("am force-stop ").append(targetPkg).append(" 2>/dev/null || true; ");
+            cmd.append("cp -f \"").append(tmpBin.getAbsolutePath()).append("\" \"").append(binDst).append("\"; ");
+            cmd.append("cp -f \"").append(tmpJson.getAbsolutePath()).append("\" \"").append(jsonDst).append("\"; ");
+            cmd.append("chmod 666 \"").append(binDst).append("\" \"").append(jsonDst).append("\" 2>/dev/null || true; ");
+            cmd.append("restorecon -F \"").append(binDst).append("\" 2>/dev/null || true; ");
+            cmd.append("restorecon -F \"").append(jsonDst).append("\" 2>/dev/null || true; ");
+            cmd.append("restorecon -F \"").append(dst).append("\" 2>/dev/null || true; ");
+            cmd.append("sync; ");
+            cmd.append("BSZ=$(wc -c < \"").append(binDst).append("\" 2>/dev/null); ");
+            cmd.append("JSZ=$(wc -c < \"").append(jsonDst).append("\" 2>/dev/null); ");
+            cmd.append("if [ -f \"").append(binDst).append("\" ] && [ \"$BSZ\" -gt 0 ] && [ -f \"").append(jsonDst).append("\" ] && [ \"$JSZ\" -gt 0 ]; then echo COPIADO_OK; else echo CP_VERIFY_FAIL; fi");
 
-            if (tmpJson != null) {
-                cmd.append("cp -f \"").append(tmpJson.getAbsolutePath()).append("\" \"").append(dst).append("/").append(jsonName).append("\"; ");
-                cmd.append("chmod 666 \"").append(dst).append("/").append(jsonName).append("\" 2>/dev/null; ");
-                cmd.append("sed -i 's/\"Version\":\"[^\"]*\"/\"Version\":\"").append(version).append("\"/g' \"").append(dst).append("/").append(jsonName).append("\" 2>/dev/null; ");
-                cmd.append("sed -i 's/\"GameVersion\":\"[^\"]*\"/\"GameVersion\":\"").append(version).append("\"/g' \"").append(dst).append("/").append(jsonName).append("\" 2>/dev/null; ");
-                cmd.append("sed -i 's/\"AppId\":\"[^\"]*\"/\"AppId\":\"").append(targetPkg).append("\"/g' \"").append(dst).append("/").append(jsonName).append("\" 2>/dev/null; ");
-            }
-
-            // Corrige o rotulo de seguranca (SELinux) do arquivo pra ele ficar
-            // igual aos arquivos que o proprio Free Fire cria — sem isso o jogo
-            // pode nao reconhecer o arquivo como valido e apagar ele sozinho ao
-            // escanear a pasta.
-            cmd.append("restorecon -F \"").append(dst).append("/").append(binName).append("\" 2>/dev/null; ");
-            if (tmpJson != null) {
-                cmd.append("restorecon -F \"").append(dst).append("/").append(jsonName).append("\" 2>/dev/null; ");
-            }
-            cmd.append("restorecon -F \"").append(dst).append("\" 2>/dev/null; ");
-
-            cmd.append("am force-stop ").append(targetPkg).append(" 2>/dev/null; ");
-
-            // Confirma de VERDADE que o arquivo apareceu no destino, com tamanho > 0,
-            // em vez de confiar cegamente que o cp não deu erro.
-            cmd.append("SZ=$(wc -c < \"").append(dst).append("/").append(binName).append("\" 2>/dev/null); ");
-            cmd.append("if [ -f \"").append(dst).append("/").append(binName).append("\" ] && [ \"$SZ\" -gt 0 ]; then echo COPIADO_OK; else echo CP_VERIFY_FAIL; fi");
-
-            log.onLog("[..] copiando pra " + dst);
+            log.onLog("[..] copiando par para " + targetPkg + " em " + dst);
             String result = RootShell.run(cmd.toString());
             log.onLog("[..] resultado shell: " + result);
-
             return result == null ? "ERR: SEM_RESPOSTA_DO_SHELL" : result.trim();
         } catch (Exception e) {
             return "ERR: " + e.getMessage();
