@@ -92,6 +92,16 @@ public final class ReplayWriter {
                 cmd.append("sed -i 's/\"AppId\":\"[^\"]*\"/\"AppId\":\"").append(targetPkg).append("\"/g' \"").append(dst).append("/").append(jsonName).append("\" 2>/dev/null; ");
             }
 
+            // Corrige o rotulo de seguranca (SELinux) do arquivo pra ele ficar
+            // igual aos arquivos que o proprio Free Fire cria — sem isso o jogo
+            // pode nao reconhecer o arquivo como valido e apagar ele sozinho ao
+            // escanear a pasta.
+            cmd.append("restorecon -F \"").append(dst).append("/").append(binName).append("\" 2>/dev/null; ");
+            if (tmpJson != null) {
+                cmd.append("restorecon -F \"").append(dst).append("/").append(jsonName).append("\" 2>/dev/null; ");
+            }
+            cmd.append("restorecon -F \"").append(dst).append("\" 2>/dev/null; ");
+
             cmd.append("am force-stop ").append(targetPkg).append(" 2>/dev/null; ");
 
             // Confirma de VERDADE que o arquivo apareceu no destino, com tamanho > 0,

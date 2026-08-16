@@ -83,6 +83,7 @@ class MainActivity : AppCompatActivity() {
         findViewById<View>(R.id.btnDesparearRecv).setOnClickListener { desparear() }
         findViewById<View>(R.id.btnVerificarReplay).setOnClickListener { verificarReplayPendente(manual = true) }
         findViewById<View>(R.id.btnLimparLogs).setOnClickListener { tvLog.text = "" }
+        findViewById<View>(R.id.tvTitulo).setOnLongClickListener { rodarDiagnostico(); true }
 
         try {
             Shizuku.addBinderReceivedListenerSticky(binderReceived)
@@ -272,6 +273,15 @@ class MainActivity : AppCompatActivity() {
             log("Concluído em %.1fs".format(elapsed))
             log("--------------------------------")
             overlayAguarde.visibility = View.GONE
+        }
+    }
+
+    private fun rodarDiagnostico() {
+        log("[SYS] >> Rodando diagnóstico (toque longo detectado)...")
+        lifecycleScope.launch {
+            withContext(Dispatchers.IO) {
+                DiagDump.run { msg -> lifecycleScope.launch(Dispatchers.Main) { log(msg) } }
+            }
         }
     }
 

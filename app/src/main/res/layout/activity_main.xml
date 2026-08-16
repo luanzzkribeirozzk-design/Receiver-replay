@@ -34,11 +34,22 @@
             <TextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
+                android:text="DEV WILL TECH"
+                android:textColor="#0A84FF"
+                android:textSize="11sp"
+                android:textStyle="bold"
+                android:letterSpacing="0.15" />
+
+            <TextView
+                android:id="@+id/tvTitulo"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
                 android:text="Receptor"
                 android:textColor="#FFFFFF"
-                android:textSize="28sp"
+                android:textSize="26sp"
                 android:textStyle="bold"
-                android:fontFamily="sans-serif-medium" />
+                android:fontFamily="sans-serif-medium"
+                android:layout_marginTop="2dp" />
 
             <TextView
                 android:id="@+id/tvShellStatus"
@@ -196,22 +207,45 @@
                             android:lineSpacingExtra="3dp"
                             android:layout_marginBottom="16dp" />
 
-                        <EditText
-                            android:id="@+id/etCodigo"
+                        <LinearLayout
                             android:layout_width="match_parent"
                             android:layout_height="56dp"
-                            android:background="@drawable/ios_input"
-                            android:hint="Código de 6 dígitos"
-                            android:textColorHint="#8E8E93"
-                            android:textColor="#0A84FF"
-                            android:textSize="19sp"
-                            android:textStyle="bold"
-                            android:gravity="center"
-                            android:letterSpacing="0.12"
-                            android:inputType="textCapCharacters"
-                            android:maxLength="6"
-                            android:paddingStart="16dp"
-                            android:paddingEnd="16dp" />
+                            android:orientation="horizontal">
+
+                            <EditText
+                                android:id="@+id/etCodigo"
+                                android:layout_width="0dp"
+                                android:layout_height="match_parent"
+                                android:layout_weight="1"
+                                android:background="@drawable/ios_input"
+                                android:hint="Código de 6 dígitos"
+                                android:textColorHint="#8E8E93"
+                                android:textColor="#0A84FF"
+                                android:textSize="19sp"
+                                android:textStyle="bold"
+                                android:gravity="center"
+                                android:letterSpacing="0.12"
+                                android:inputType="textCapCharacters"
+                                android:maxLength="6"
+                                android:paddingStart="16dp"
+                                android:paddingEnd="16dp" />
+
+                            <Button
+                                android:id="@+id/btnColarCodigo"
+                                android:layout_width="wrap_content"
+                                android:layout_height="match_parent"
+                                android:layout_marginStart="8dp"
+                                android:text="Colar"
+                                android:textAllCaps="false"
+                                android:textColor="#FFFFFF"
+                                android:textSize="13sp"
+                                android:textStyle="bold"
+                                android:paddingStart="16dp"
+                                android:paddingEnd="16dp"
+                                android:background="@drawable/ios_btn_secondary"
+                                android:stateListAnimator="@null" />
+
+                        </LinearLayout>
 
                         <Button
                             android:id="@+id/btnParear"
