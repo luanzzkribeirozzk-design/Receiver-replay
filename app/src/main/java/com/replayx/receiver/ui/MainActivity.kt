@@ -242,7 +242,7 @@ class MainActivity : AppCompatActivity() {
             ReplayWriter.FFN_PKG -> "Origem detectada: Free Fire Normal. Você ainda pode escolher outra opção."
             else -> "A origem não foi identificada. Escolha onde deseja copiar."
         }
-        AlertDialog.Builder(this)
+        val dialog = AlertDialog.Builder(this)
             .setTitle("Onde copiar o replay?")
             .setMessage(origem)
             .setItems(arrayOf("Free Fire MAX", "Free Fire Normal", "Copiar para os dois")) { _, which ->
@@ -255,7 +255,27 @@ class MainActivity : AppCompatActivity() {
                 processarCopias(pend, targets)
             }
             .setOnCancelListener { dialogAberto = false }
-            .show()
+            .create()
+
+        dialog.setOnShowListener {
+            val dark = 0xFF111111.toInt()
+            val light = 0xFFF5F5F5.toInt()
+            dialog.window?.setBackgroundDrawableResource(android.R.color.white)
+            dialog.findViewById<android.widget.TextView>(android.R.id.message)?.setTextColor(dark)
+            val titleId = resources.getIdentifier("alertTitle", "id", "android")
+            dialog.findViewById<android.widget.TextView>(titleId)?.setTextColor(dark)
+            dialog.listView?.let { list ->
+                list.setBackgroundColor(light)
+                for (i in 0 until list.childCount) {
+                    (list.getChildAt(i) as? android.widget.TextView)?.apply {
+                        setTextColor(dark)
+                        textSize = 16f
+                        setPadding(28, 24, 28, 24)
+                    }
+                }
+            }
+        }
+        dialog.show()
     }
 
     private fun processarCopias(pend: TransferDownloader.Pending, targets: List<String>) {
