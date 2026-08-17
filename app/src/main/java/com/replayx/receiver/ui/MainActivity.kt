@@ -77,7 +77,7 @@ class MainActivity : AppCompatActivity() {
         tabParear.setOnClickListener { showTab(1) }
         tabReplays.setOnClickListener { showTab(2) }
 
-        findViewById<View>(R.id.btnAbrirShizuku).setOnClickListener { abrirShizuku() }
+        findViewById<View>(R.id.btnAbrirShizuku).setOnClickListener { selecionarAcesso() }
         findViewById<View>(R.id.btnSolicitarArquivos).setOnClickListener { solicitarArquivos() }
         findViewById<View>(R.id.btnColarCodigo).setOnClickListener { colarCodigo() }
         findViewById<View>(R.id.btnParear).setOnClickListener { parear() }
@@ -127,15 +127,50 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
+    private var modoAcesso = "AUTO"
+
+    private fun selecionarAcesso() {
+        val opcoes = arrayOf("ADB (via PC)", "Shizuku", "Root")
+        val selecionado = when (modoAcesso) { "ADB" -> 0; "SHIZUKU" -> 1; "ROOT" -> 2; else -> -1 }
+        android.app.AlertDialog.Builder(this)
+            .setTitle("Método de acesso")
+            .setSingleChoiceItems(opcoes, selecionado) { dialog, which ->
+                modoAcesso = when (which) { 0 -> "ADB"; 1 -> "SHIZUKU"; else -> "ROOT" }
+                dialog.dismiss()
+                when (modoAcesso) {
+                    "ADB" -> {
+                        log("Aguardando ADB pelo PC")
+                        android.widget.Toast.makeText(this, "ADB é conectado pelo PC", android.widget.Toast.LENGTH_SHORT).show()
+                    }
+                    "SHIZUKU" -> { abrirShizuku(); checarAcesso() }
+                    else -> checarAcesso()
+                }
+            }
+            .setNegativeButton("Cancelar", null)
+            .show()
+    }
+
     private fun checarAcesso() {
         lifecycleScope.launch {
             val root = withContext(Dispatchers.IO) { RootShell.hasRoot() }
             val shizuku = withContext(Dispatchers.IO) { RootShell.hasShizuku() }
             runOnUiThread {
-                when {
-                    root -> { tvShellStatus.text = "● Acesso root ativo"; tvShellStatus.setTextColor(0xFF34C759.toInt()) }
-                    shizuku -> { tvShellStatus.text = "● Shizuku ativo"; tvShellStatus.setTextColor(0xFF34C759.toInt()) }
-                    else -> { tvShellStatus.text = "● Sem acesso (root/Shizuku)"; tvShellStatus.setTextColor(0xFFFF453A.toInt()) }
+                when (modoAcesso) {
+                    "ADB" -> { tvShellStatus.text = "● ADB selecionado"; tvShellStatus.setTextColor(0xFFFFD60A.toInt()) }
+                    "SHIZUKU" -> {
+                        tvShellStatus.text = if (shizuku) "● Shizuku ativo" else "● Shizuku aguardando"
+                        tvShellStatus.setTextColor(if (shizuku) 0xFF34C759.toInt() else 0xFFFFD60A.toInt())
+                        log(if (shizuku) "Concluído" else "Aguardando Shizuku")
+                    }
+                    "ROOT" -> {
+                        tvShellStatus.text = if (root) "● Root ativo" else "● Root aguardando"
+                        tvShellStatus.setTextColor(if (root) 0xFF34C759.toInt() else 0xFFFFD60A.toInt())
+                        log(if (root) "Concluído" else "Aguardando Root")
+                    }
+                    else -> {
+                        tvShellStatus.text = when { root -> "● Root ativo"; shizuku -> "● Shizuku ativo"; else -> "● Escolha um acesso" }
+                        tvShellStatus.setTextColor(if (root || shizuku) 0xFF34C759.toInt() else 0xFFFFD60A.toInt())
+                    }
                 }
             }
         }
@@ -369,10 +404,14 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun log(msg: String) {
-        val t = SimpleDateFormat("HH:mm:ss", Locale.getDefault()).format(Date())
-        val cur = tvLog.text.toString()
-        val sep = System.lineSeparator()
-        tvLog.text = if (cur.isEmpty()) "[$t] $msg" else "$cur$sep[$t] $msg"
+        val estado = when {
+            msg.contains("ERR", ignoreCase = true) || msg.contains("falha", ignoreCase = true) || msg.contains("erro", ignoreCase = true) -> "Erro"
+            msg.contains("baix", ignoreCase = true) || msg.contains("copi", ignoreCase = true) -> "Copiando"
+            msg.contains("paread", ignoreCase = true) || msg.contains("conect", ignoreCase = true) -> "Pareado"
+            msg.contains("aguard", ignoreCase = true) || msg.contains("baixando", ignoreCase = true) -> "Aguardando"
+            else -> "Concluído"
+        }
+        tvLog.text = estado
         scrollLog.post { scrollLog.fullScroll(View.FOCUS_DOWN) }
     }
 
