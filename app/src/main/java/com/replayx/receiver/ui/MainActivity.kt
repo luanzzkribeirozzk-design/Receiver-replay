@@ -364,7 +364,8 @@ class MainActivity : AppCompatActivity() {
                 val label = if (targetPkg == ReplayWriter.FFM_PKG) "Free Fire MAX" else "Free Fire Normal"
                 log("[..] tentando copiar para $label")
                 val result = withContext(Dispatchers.IO) {
-                    ReplayWriter.writeToGame(this@MainActivity, down.binData, down.jsonData, pend.binName, pend.jsonName, targetPkg) { msg ->
+                    ReplayWriter.writeToGame(this@MainActivity, down.binData, down.jsonData, pend.binName, pend.jsonName, targetPkg,
+                        pend.sourceVersion, pend.replayVersion) { msg ->
                         lifecycleScope.launch(Dispatchers.Main) { log(msg) }
                     }
                 }

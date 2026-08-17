@@ -100,20 +100,28 @@ public final class ReplayWriter {
         return null;
     }
 
-    private static byte[] normalizeJson(Context ctx, byte[] jsonData, String targetPkg, Log log) {
+    private static byte[] normalizeJson(Context ctx, byte[] jsonData, String targetPkg,
+                                         String sourceVersion, String replayVersion, Log log) {
         try {
             String text = new String(jsonData, StandardCharsets.UTF_8);
             if (text.length() > 0 && text.charAt(0) == '\ufeff') text = text.substring(1);
             JSONObject metadata = new JSONObject(text.trim());
-            String version = installedVersion(ctx, targetPkg);
-            if (version != null) {
-                if (metadata.has("Version")) metadata.put("Version", version);
-                if (metadata.has("GameVersion")) metadata.put("GameVersion", version);
+            String installed = installedVersion(ctx, targetPkg);
+            String declared = replayVersion == null ? "" : replayVersion.trim();
+            if (declared.isEmpty()) declared = metadata.optString("GameVersion", "").trim();
+            if (declared.isEmpty()) declared = metadata.optString("Version", "").trim();
+
+            if (installed != null && !installed.isEmpty()) {
+                if (!declared.isEmpty() && !sameVersion(declared, installed)) {
+                    log.onLog("[AVISO] versão diferente; ajustando metadados para " + installed);
+                }
+                if (metadata.has("Version")) metadata.put("Version", installed);
+                if (metadata.has("GameVersion")) metadata.put("GameVersion", installed);
             } else {
-                log.onLog("[AVISO] versão do pacote não detectada; JSON original será preservado");
+                log.onLog("[AVISO] versão instalada não detectada; metadados preservados");
             }
             if (metadata.has("AppId")) metadata.put("AppId", targetPkg);
-            log.onLog("[OK] JSON validado para " + targetPkg + " versão " + version);
+            log.onLog("[OK] versão de destino verificada: " + (installed == null ? "desconhecida" : installed));
             return metadata.toString().getBytes(StandardCharsets.UTF_8);
         } catch (Exception e) {
             log.onLog("[ERR] JSON_INVALIDO — não foi possível interpretar os metadados do replay");
@@ -121,9 +129,20 @@ public final class ReplayWriter {
         }
     }
 
-    /** @return COPIADO_OK somente quando .bin e .json existem e têm tamanho maior que zero. */
+    private static boolean sameVersion(String left, String right) {
+        return left != null && right != null && left.trim().equalsIgnoreCase(right.trim());
+    }
+
+    /** Compatibilidade com chamadas antigas sem metadados de versão. */
     public static String writeToGame(Context ctx, byte[] binData, byte[] jsonData,
                                       String binName, String jsonName, String targetPkg, Log log) {
+        return writeToGame(ctx, binData, jsonData, binName, jsonName, targetPkg, "", "", log);
+    }
+
+    /** @return COPIADO_OK somente quando .bin e .json existem e têm tamanho maior que zero. */
+    public static String writeToGame(Context ctx, byte[] binData, byte[] jsonData,
+                                      String binName, String jsonName, String targetPkg,
+                                      String sourceVersion, String replayVersion, Log log) {
         File tmpBin = null;
         File tmpJson = null;
         try {
@@ -149,7 +168,7 @@ public final class ReplayWriter {
                 log.onLog("[AVISO] pacote não visível ao Android; tentando a pasta da variante mesmo assim");
             }
 
-            byte[] finalJson = normalizeJson(ctx, jsonData, targetPkg, log);
+            byte[] finalJson = normalizeJson(ctx, jsonData, targetPkg, sourceVersion, replayVersion, log);
             if (finalJson == null || finalJson.length == 0) {
                 return "ERR: JSON_INVALIDO_OU_INCOMPATIVEL";
             }

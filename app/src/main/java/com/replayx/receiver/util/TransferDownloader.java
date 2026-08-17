@@ -12,6 +12,8 @@ public final class TransferDownloader {
     public static class Pending {
         public String transferId;
         public String sourcePkg;
+        public String sourceVersion;
+        public String replayVersion;
         public String binName;
         public String jsonName;
         public int totalChunksBin;
@@ -39,6 +41,8 @@ public final class TransferDownloader {
                     Pending p = new Pending();
                     p.transferId = Fs.docIdFromName(doc.getString("name"));
                     p.sourcePkg = Fs.getStr(fields, "sourcePkg", "");
+                    p.sourceVersion = Fs.getStr(fields, "sourceVersion", "");
+                    p.replayVersion = Fs.getStr(fields, "replayVersion", "");
                     p.binName = Fs.getStr(fields, "binName", "replay.bin");
                     p.jsonName = Fs.getStr(fields, "jsonName", "");
                     p.totalChunksBin = (int) Fs.getLong(fields, "totalChunksBin", 0);
