@@ -245,33 +245,41 @@ class MainActivity : AppCompatActivity() {
         val dialog = AlertDialog.Builder(this)
             .setTitle("Onde copiar o replay?")
             .setMessage(origem)
-            .setItems(arrayOf("Free Fire MAX", "Free Fire Normal", "Copiar para os dois")) { _, which ->
-                val targets = when (which) {
-                    0 -> listOf(ReplayWriter.FFM_PKG)
-                    1 -> listOf(ReplayWriter.FFN_PKG)
-                    else -> listOf(ReplayWriter.FFM_PKG, ReplayWriter.FFN_PKG)
-                }
-                dialogAberto = false
-                processarCopias(pend, targets)
-            }
+            .setPositiveButton("Free Fire MAX", null)
+            .setNegativeButton("Free Fire Normal", null)
+            .setNeutralButton("Copiar para os dois", null)
             .setOnCancelListener { dialogAberto = false }
             .create()
 
         dialog.setOnShowListener {
             val dark = 0xFF111111.toInt()
-            val light = 0xFFF5F5F5.toInt()
             dialog.window?.setBackgroundDrawableResource(android.R.color.white)
             dialog.findViewById<android.widget.TextView>(android.R.id.message)?.setTextColor(dark)
             val titleId = resources.getIdentifier("alertTitle", "id", "android")
             dialog.findViewById<android.widget.TextView>(titleId)?.setTextColor(dark)
-            dialog.listView?.let { list ->
-                list.setBackgroundColor(light)
-                for (i in 0 until list.childCount) {
-                    (list.getChildAt(i) as? android.widget.TextView)?.apply {
-                        setTextColor(dark)
-                        textSize = 16f
-                        setPadding(28, 24, 28, 24)
-                    }
+
+            dialog.getButton(android.content.DialogInterface.BUTTON_POSITIVE).apply {
+                setTextColor(dark)
+                setOnClickListener {
+                    dialog.dismiss()
+                    dialogAberto = false
+                    processarCopias(pend, listOf(ReplayWriter.FFM_PKG))
+                }
+            }
+            dialog.getButton(android.content.DialogInterface.BUTTON_NEGATIVE).apply {
+                setTextColor(dark)
+                setOnClickListener {
+                    dialog.dismiss()
+                    dialogAberto = false
+                    processarCopias(pend, listOf(ReplayWriter.FFN_PKG))
+                }
+            }
+            dialog.getButton(android.content.DialogInterface.BUTTON_NEUTRAL).apply {
+                setTextColor(dark)
+                setOnClickListener {
+                    dialog.dismiss()
+                    dialogAberto = false
+                    processarCopias(pend, listOf(ReplayWriter.FFM_PKG, ReplayWriter.FFN_PKG))
                 }
             }
         }
