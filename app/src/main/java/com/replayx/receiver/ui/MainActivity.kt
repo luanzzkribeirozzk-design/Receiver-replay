@@ -79,6 +79,7 @@ class MainActivity : AppCompatActivity() {
 
         findViewById<View>(R.id.btnAbrirShizuku).setOnClickListener { abrirShizuku() }
         findViewById<View>(R.id.btnSolicitarArquivos).setOnClickListener { solicitarArquivos() }
+        findViewById<View>(R.id.btnColarCodigo).setOnClickListener { colarCodigo() }
         findViewById<View>(R.id.btnParear).setOnClickListener { parear() }
         findViewById<View>(R.id.btnDesparearRecv).setOnClickListener { desparear() }
         findViewById<View>(R.id.btnVerificarReplay).setOnClickListener { verificarReplayPendente(manual = true) }
@@ -165,6 +166,26 @@ class MainActivity : AppCompatActivity() {
             )
         } else {
             log("[OK] Nesse Android a permissão de arquivos é controlada por root/Shizuku, não precisa de permissão separada")
+        }
+    }
+
+    private fun colarCodigo() {
+        try {
+            val cm = getSystemService(android.content.Context.CLIPBOARD_SERVICE) as android.content.ClipboardManager
+            val clip = cm.primaryClip
+            val raw = if (clip != null && clip.itemCount > 0) clip.getItemAt(0).coerceToText(this).toString() else ""
+            val code = raw.trim().replace(Regex("[^A-Za-z0-9]"), "").uppercase(java.util.Locale.ROOT).take(6)
+            if (code.isEmpty()) {
+                log("[ERR] A área de transferência não contém um código válido")
+                android.widget.Toast.makeText(this, "Nenhum código válido na área de transferência", android.widget.Toast.LENGTH_SHORT).show()
+                return
+            }
+            etCodigo.setText(code)
+            etCodigo.setSelection(etCodigo.text.length)
+            log("[OK] código colado: $code")
+            android.widget.Toast.makeText(this, "Código colado", android.widget.Toast.LENGTH_SHORT).show()
+        } catch (e: Exception) {
+            log("[ERR] Falha ao colar código: ${e.message}")
         }
     }
 
