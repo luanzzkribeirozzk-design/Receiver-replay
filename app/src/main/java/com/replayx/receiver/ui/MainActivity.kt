@@ -71,16 +71,8 @@ class MainActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
-        if (!com.replayx.receiver.security.IntegrityCheck.isValid(this)) {
-            finish()
-            return
-        }
-        if (!com.replayx.receiver.security.LicenseManager.hasLocalLicense(this)) {
-            val intent = Intent(this, LoginActivity::class.java).apply {
-                flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
-            }
-            startActivity(intent)
-            finish()
+        if (!com.replayx.receiver.security.SecurityGate.allow(this)) {
+            redirectToLogin()
             return
         }
         window.addFlags(android.view.WindowManager.LayoutParams.FLAG_SECURE)
@@ -134,6 +126,10 @@ class MainActivity : AppCompatActivity() {
 
     override fun onResume() {
         super.onResume()
+        if (!com.replayx.receiver.security.SecurityGate.allow(this)) {
+            redirectToLogin()
+            return
+        }
         PairingManager.refreshBattery(this)
         verificarReplayPendente(manual = false)
         startLicenseTimer()
@@ -330,6 +326,10 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun parear() {
+        if (!com.replayx.receiver.security.SecurityGate.allow(this)) {
+            redirectToLogin()
+            return
+        }
         val code = etCodigo.text.toString().trim()
         if (code.isEmpty()) { log("[ERR] Digite o código"); return }
         lifecycleScope.launch {
@@ -358,6 +358,10 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun verificarReplayPendente(manual: Boolean) {
+        if (!com.replayx.receiver.security.SecurityGate.allow(this)) {
+            redirectToLogin()
+            return
+        }
         val senderId = PairingManager.getPairedSenderId(this)
         if (senderId.isEmpty()) {
             if (manual) log("[ERR] Pareie um dispositivo primeiro")
@@ -448,6 +452,10 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun processarCopias(pend: TransferDownloader.Pending, targets: List<String>) {
+        if (!com.replayx.receiver.security.SecurityGate.allow(this)) {
+            redirectToLogin()
+            return
+        }
         showTab(2)
         overlayAguarde.visibility = View.VISIBLE
         tvAguarde.text = "Copiando replay…"
@@ -492,6 +500,15 @@ class MainActivity : AppCompatActivity() {
             log("--------------------------------")
             overlayAguarde.visibility = View.GONE
         }
+    }
+
+    private fun redirectToLogin() {
+        licenseTimer?.cancel()
+        val intent = Intent(this, LoginActivity::class.java).apply {
+            flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
+        }
+        startActivity(intent)
+        finish()
     }
 
     private fun copiarLogs() {
