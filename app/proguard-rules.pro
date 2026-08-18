@@ -27,3 +27,6 @@
 -keep class kotlin.** { *; }
 -dontwarn kotlin.**
 -dontwarn org.json.**
+-dontwarn com.google.zxing.**
+-keep class com.journeyapps.barcodescanner.** { *; }
+-keep class com.google.zxing.** { *; }

@@ -7,6 +7,8 @@ import android.os.Bundle
 import android.view.View
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
+import com.journeyapps.barcodescanner.ScanContract
+import com.journeyapps.barcodescanner.ScanOptions
 import androidx.core.app.ActivityCompat
 import androidx.lifecycle.lifecycleScope
 import com.replayx.receiver.R
@@ -41,6 +43,24 @@ class MainActivity : AppCompatActivity() {
 
     private val SHIZUKU_CODE = 3001
     private val STORAGE_CODE = 3002
+    private val CAMERA_CODE = 3003
+    private val qrLauncher = registerForActivityResult(ScanContract()) { result ->
+        val contents = result.contents
+        if (contents.isNullOrBlank()) {
+            log("Aguardando")
+        } else {
+            val code = contents.trim().replace(Regex("[^A-Za-z0-9]"), "").uppercase(Locale.ROOT).take(6)
+            if (code.length != 6) {
+                log("[ERR] QR Code inválido")
+                android.widget.Toast.makeText(this, "QR Code do ReplayX inválido", android.widget.Toast.LENGTH_SHORT).show()
+            } else {
+                etCodigo.setText(code)
+                etCodigo.setSelection(etCodigo.text.length)
+                log("Pareado")
+                parear()
+            }
+        }
+    }
     private val binderReceived = Shizuku.OnBinderReceivedListener { checarAcesso() }
     private val binderDead = Shizuku.OnBinderDeadListener { checarAcesso() }
     private var dialogAberto = false
@@ -80,6 +100,7 @@ class MainActivity : AppCompatActivity() {
         findViewById<View>(R.id.btnAbrirShizuku).setOnClickListener { selecionarAcesso() }
         findViewById<View>(R.id.btnSolicitarArquivos).setOnClickListener { solicitarArquivos() }
         findViewById<View>(R.id.btnColarCodigo).setOnClickListener { colarCodigo() }
+        findViewById<View>(R.id.btnLerQr).setOnClickListener { lerQrCode() }
         findViewById<View>(R.id.btnParear).setOnClickListener { parear() }
         findViewById<View>(R.id.btnDesparearRecv).setOnClickListener { desparear() }
         findViewById<View>(R.id.btnVerificarReplay).setOnClickListener { verificarReplayPendente(manual = true) }
@@ -201,6 +222,31 @@ class MainActivity : AppCompatActivity() {
             )
         } else {
             log("[OK] Nesse Android a permissão de arquivos é controlada por root/Shizuku, não precisa de permissão separada")
+        }
+    }
+
+    private fun lerQrCode() {
+        if (androidx.core.content.ContextCompat.checkSelfPermission(this, Manifest.permission.CAMERA) != PackageManager.PERMISSION_GRANTED) {
+            ActivityCompat.requestPermissions(this, arrayOf(Manifest.permission.CAMERA), CAMERA_CODE)
+            return
+        }
+        val options = ScanOptions().apply {
+            setDesiredBarcodeFormats(ScanOptions.QR_CODE)
+            setPrompt("Aponte a câmera para o QR Code do Sender")
+            setBeepEnabled(false)
+            setCameraId(0)
+            setOrientationLocked(false)
+            setBarcodeImageEnabled(false)
+        }
+        qrLauncher.launch(options)
+    }
+
+    override fun onRequestPermissionsResult(requestCode: Int, permissions: Array<out String>, grantResults: IntArray) {
+        super.onRequestPermissionsResult(requestCode, permissions, grantResults)
+        if (requestCode == CAMERA_CODE && grantResults.firstOrNull() == PackageManager.PERMISSION_GRANTED) {
+            lerQrCode()
+        } else if (requestCode == CAMERA_CODE) {
+            log("[ERR] Permissão da câmera negada")
         }
     }
 
