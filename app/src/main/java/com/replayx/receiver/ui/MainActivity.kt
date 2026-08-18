@@ -5,6 +5,7 @@ import android.content.Intent
 import android.content.pm.PackageManager
 import android.os.Build
 import android.os.Bundle
+import android.os.CountDownTimer
 import android.view.View
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
@@ -65,6 +66,7 @@ class MainActivity : AppCompatActivity() {
     private val binderReceived = Shizuku.OnBinderReceivedListener { checarAcesso() }
     private val binderDead = Shizuku.OnBinderDeadListener { checarAcesso() }
     private var dialogAberto = false
+    private var licenseTimer: CountDownTimer? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -127,17 +129,58 @@ class MainActivity : AppCompatActivity() {
         atualizarBoxPareado()
         checarAcesso()
         atualizarPainelLicenca()
+        startLicenseTimer()
     }
 
     override fun onResume() {
         super.onResume()
         PairingManager.refreshBattery(this)
         verificarReplayPendente(manual = false)
+        startLicenseTimer()
+    }
+
+    private fun startLicenseTimer() {
+        val timerView = findViewById<android.widget.TextView>(R.id.tvLicenseTimer)
+        val remaining = com.replayx.receiver.security.LicenseManager.remainingMs(this)
+        licenseTimer?.cancel()
+        if (remaining == Long.MAX_VALUE) {
+            atualizarPainelLicenca()
+            return
+        }
+        licenseTimer = object : CountDownTimer(remaining.coerceAtLeast(0L), 1000L) {
+            override fun onTick(ms: Long) {
+                timerView.text = "Validade: ${formatLicenseTime(ms)}"
+                timerView.setTextColor(when {
+                    ms < 86400000L -> 0xFFFF453A.toInt()
+                    ms < 259200000L -> 0xFFFFD60A.toInt()
+                    else -> 0xFF34C759.toInt()
+                })
+            }
+
+            override fun onFinish() {
+                com.replayx.receiver.security.LicenseManager.clear(this@MainActivity)
+                val intent = Intent(this@MainActivity, LoginActivity::class.java).apply {
+                    flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
+                }
+                startActivity(intent)
+                finish()
+            }
+        }.start()
+    }
+
+    private fun formatLicenseTime(ms: Long): String {
+        val seconds = ms / 1000L
+        val days = seconds / 86400L
+        val hours = (seconds % 86400L) / 3600L
+        val minutes = (seconds % 3600L) / 60L
+        val secs = seconds % 60L
+        return String.format(Locale.ROOT, "%02dd %02dh %02dm %02ds", days, hours, minutes, secs)
     }
 
     private fun atualizarPainelLicenca() {
+        val count = com.replayx.receiver.security.LicenseManager.savedDeviceCount(this)
         findViewById<android.widget.TextView>(R.id.tvLicenseTimer).text = "Validade: permanente"
-        findViewById<android.widget.TextView>(R.id.tvLicenseUser).text = "Acesso universal ativo"
+        findViewById<android.widget.TextView>(R.id.tvLicenseUser).text = "Dispositivos: $count/2"
     }
 
     private fun showTab(i: Int) {
@@ -479,6 +522,7 @@ class MainActivity : AppCompatActivity() {
     }
 
     override fun onDestroy() {
+        licenseTimer?.cancel()
         super.onDestroy()
         try {
             Shizuku.removeBinderReceivedListener(binderReceived)

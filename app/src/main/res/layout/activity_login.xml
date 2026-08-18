@@ -166,7 +166,7 @@
                     android:background="@drawable/input_bg"
                     android:textColor="#FFFFFF"
                     android:textColorHint="#1E1600"
-                    android:hint="DEVWILL00"
+                    android:hint="Sua key de licença"
                     android:padding="12dp"
                     android:fontFamily="monospace"
                     android:textSize="13sp"

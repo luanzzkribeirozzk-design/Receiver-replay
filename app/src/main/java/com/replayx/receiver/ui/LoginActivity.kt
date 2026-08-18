@@ -15,6 +15,7 @@ import com.google.android.material.switchmaterial.SwitchMaterial
 import com.replayx.receiver.R
 import com.replayx.receiver.security.IntegrityCheck
 import com.replayx.receiver.security.LicenseManager
+import java.util.concurrent.Executors
 
 class LoginActivity : AppCompatActivity() {
     private lateinit var etKey: EditText
@@ -24,6 +25,7 @@ class LoginActivity : AppCompatActivity() {
     private lateinit var splash: View
     private lateinit var switchRemember: SwitchMaterial
     private lateinit var switchHide: SwitchMaterial
+    private val executor = Executors.newSingleThreadExecutor()
     private val main = Handler(Looper.getMainLooper())
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -45,29 +47,49 @@ class LoginActivity : AppCompatActivity() {
         switchRemember.isChecked = true
         switchRemember.isEnabled = false
         switchHide.setOnCheckedChangeListener { _, checked -> applySecureWindow(checked) }
-        btnLogin.setOnClickListener { login() }
+        btnLogin.setOnClickListener { login(false) }
         etKey.setOnEditorActionListener { _, action, _ ->
-            if (action == EditorInfo.IME_ACTION_DONE) { login(); true } else false
+            if (action == EditorInfo.IME_ACTION_DONE) { login(false); true } else false
         }
 
-        if (LicenseManager.hasLocalLicense(this)) {
-            goMain()
+        val savedKey = LicenseManager.savedKey(this)
+        if (savedKey.isNotEmpty()) {
+            setLoading(true)
+            setStatus("Verificando acesso...", 0xFFB0B0B0.toInt())
+            login(true, savedKey)
         } else {
-            splash.animate().alpha(0f).setDuration(220).withEndAction { splash.visibility = View.GONE }.start()
-            setLoading(false)
+            setupForm()
         }
     }
 
-    private fun login() {
-        val key = etKey.text.toString().trim()
+    private fun setupForm() {
+        splash.animate().alpha(0f).setDuration(220).withEndAction { splash.visibility = View.GONE }.start()
+        setLoading(false)
+    }
+
+    private fun login(auto: Boolean, saved: String = "") {
+        val key = if (auto) saved else etKey.text.toString().trim()
+        if (key.isEmpty()) {
+            setStatus("Insira sua key", 0xFFFF5555.toInt())
+            return
+        }
         setLoading(true)
-        setStatus("Validando acesso...", 0xFFFFD60A.toInt())
-        if (LicenseManager.unlock(this, key)) {
-            setStatus("Acesso liberado", 0xFF34C759.toInt())
-            goMain()
-        } else {
-            setLoading(false)
-            setStatus("Chave inválida", 0xFFFF5555.toInt())
+        if (!auto) setStatus("Validando key...", 0xFFFFD60A.toInt())
+        executor.execute {
+            val result = LicenseManager.validate(this, key)
+            main.post {
+                if (result.ok) {
+                    setStatus("Acesso liberado", 0xFF34C759.toInt())
+                    goMain()
+                } else if (auto && result.networkError && LicenseManager.hasLocalLicense(this)) {
+                    setStatus("Acesso local restaurado", 0xFFFFD60A.toInt())
+                    goMain()
+                } else {
+                    LicenseManager.clear(this)
+                    setupForm()
+                    setStatus(if (auto) "Faça login novamente" else result.message, 0xFFFF5555.toInt())
+                }
+            }
         }
     }
 
@@ -97,6 +119,7 @@ class LoginActivity : AppCompatActivity() {
 
     override fun onDestroy() {
         super.onDestroy()
+        executor.shutdownNow()
         main.removeCallbacksAndMessages(null)
     }
 }

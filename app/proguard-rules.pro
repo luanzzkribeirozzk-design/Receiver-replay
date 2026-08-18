@@ -20,7 +20,7 @@
 
 -keep public class com.replayx.receiver.ui.MainActivity { public *; }
 -keep public class com.replayx.receiver.ui.LoginActivity { public *; }
--keep class com.replayx.receiver.security.** { *; }
+-keepclassmembers class com.replayx.receiver.security.SecureStore { *; }
 
 -keep class rikka.shizuku.** { *; }
 -dontwarn rikka.shizuku.**

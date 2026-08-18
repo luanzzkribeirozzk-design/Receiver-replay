@@ -12,6 +12,12 @@ import com.replayx.receiver.security.C;
 public final class Fs {
     private Fs() {}
 
+    private static volatile boolean lastQueryNetworkError = false;
+
+    public static boolean lastQueryNetworkError() {
+        return lastQueryNetworkError;
+    }
+
     private static String base() {
         return "https://firestore.googleapis.com/v1/projects/" + C.p() + "/databases/(default)/documents";
     }
@@ -76,8 +82,15 @@ public final class Fs {
         return patchDoc(path, fields, null);
     }
     public static boolean patchDoc(String path, JSONObject fields, String updateMaskQuery) {
+        return patchDoc(path, fields, updateMaskQuery, null);
+    }
+
+    public static boolean patchDoc(String path, JSONObject fields, String updateMaskQuery, String updateTime) {
         try {
             String q = "?key=" + C.k() + (updateMaskQuery != null ? "&" + updateMaskQuery : "");
+            if (updateTime != null && !updateTime.isEmpty()) {
+                q += "&currentDocument.updateTime=" + java.net.URLEncoder.encode(updateTime, "UTF-8");
+            }
             URL url = new URL(base() + "/" + path + q);
             HttpURLConnection c = (HttpURLConnection) url.openConnection();
             c.setRequestMethod("PATCH");
@@ -113,6 +126,7 @@ public final class Fs {
      * ordenado por createdAt desc (se existir), limitado.
      */
     public static JSONArray query(String collection, String whereField, String whereValueStr, int limit) {
+        lastQueryNetworkError = false;
         try {
             JSONObject fieldFilter = new JSONObject()
                 .put("field", new JSONObject().put("fieldPath", whereField))
@@ -139,7 +153,10 @@ public final class Fs {
             c.disconnect();
             if (code != 200) return new JSONArray();
             return new JSONArray(resp);
-        } catch (Exception e) { return new JSONArray(); }
+        } catch (Exception e) {
+            lastQueryNetworkError = true;
+            return new JSONArray();
+        }
     }
 
     public static String docIdFromName(String name) {
