@@ -1,6 +1,7 @@
 package com.replayx.receiver.ui
 
 import android.Manifest
+import android.content.Intent
 import android.content.pm.PackageManager
 import android.os.Build
 import android.os.Bundle
@@ -72,6 +73,15 @@ class MainActivity : AppCompatActivity() {
             finish()
             return
         }
+        if (!com.replayx.receiver.security.LicenseManager.hasLocalLicense(this)) {
+            val intent = Intent(this, LoginActivity::class.java).apply {
+                flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
+            }
+            startActivity(intent)
+            finish()
+            return
+        }
+        window.addFlags(android.view.WindowManager.LayoutParams.FLAG_SECURE)
 
         setContentView(R.layout.activity_main)
 
@@ -116,12 +126,18 @@ class MainActivity : AppCompatActivity() {
         showTab(if (PairingManager.getPairedSenderId(this).isEmpty()) 1 else 2)
         atualizarBoxPareado()
         checarAcesso()
+        atualizarPainelLicenca()
     }
 
     override fun onResume() {
         super.onResume()
         PairingManager.refreshBattery(this)
         verificarReplayPendente(manual = false)
+    }
+
+    private fun atualizarPainelLicenca() {
+        findViewById<android.widget.TextView>(R.id.tvLicenseTimer).text = "Validade: permanente"
+        findViewById<android.widget.TextView>(R.id.tvLicenseUser).text = "Acesso universal ativo"
     }
 
     private fun showTab(i: Int) {
