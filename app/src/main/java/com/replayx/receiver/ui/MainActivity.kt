@@ -75,7 +75,6 @@ class MainActivity : AppCompatActivity() {
             redirectToLogin()
             return
         }
-        window.addFlags(android.view.WindowManager.LayoutParams.FLAG_SECURE)
 
         setContentView(R.layout.activity_main)
 
